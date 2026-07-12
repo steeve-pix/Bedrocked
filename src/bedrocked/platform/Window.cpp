@@ -1,4 +1,5 @@
 #include "bedrocked/platform/Window.hpp"
+
 #include <GLFW/glfw3.h>
 #include <stdexcept>
 
