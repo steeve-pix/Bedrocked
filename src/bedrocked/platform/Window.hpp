@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <stdexcept>
 
 struct GLFWwindow;
 
@@ -21,7 +22,7 @@ namespace bedrocked {
 
         Window &operator=(const Window &) = delete;
 
-        [[nodiscard]] bool ShouldClose() const noexcept;
+        [[nodiscard]] bool shouldClose() const noexcept;
 
         void pollEvents() noexcept;
 

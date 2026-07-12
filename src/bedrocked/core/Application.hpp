@@ -8,7 +8,7 @@ namespace bedrocked {
 
         ~Application() = default;
 
-        void run();
+        [[nodiscard]] int run();
     private:
         Window m_window;
     };

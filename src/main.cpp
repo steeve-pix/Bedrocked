@@ -2,7 +2,6 @@
 
 int main() {
     bedrocked::Application application;
-    application.run();
 
-    return 0;
+    return application.run();
 }

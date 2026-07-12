@@ -1,6 +1,4 @@
-#include "Window.hpp"
-#include <iostream>
-
+#include "bedrocked/platform/Window.hpp"
 #include <GLFW/glfw3.h>
 
 namespace bedrocked {
@@ -10,17 +8,16 @@ namespace bedrocked {
             throw std::runtime_error{"Failed to initialize GLFW"};
         }
 
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
         // Create the window
         m_handle = glfwCreateWindow(config.width, config.height, config.title.c_str(), nullptr, nullptr);
 
         if (!m_handle) {
-            std::cerr << "Failed to create GLFW window\n";
             glfwTerminate();
-            std::exit(EXIT_FAILURE);
+            throw std::runtime_error{"Failed to create GLFW window"};
         }
 
         // Bind the OpenGL context to current threaad
@@ -33,7 +30,7 @@ namespace bedrocked {
         glfwTerminate();
     }
 
-    bool Window::ShouldClose() const noexcept {
+    bool Window::shouldClose() const noexcept {
         return glfwWindowShouldClose(m_handle);
     }
 
