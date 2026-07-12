@@ -1,5 +1,6 @@
 #include "bedrocked/core/Application.hpp"
 #include "bedrocked/input/Key.hpp"
+#include "bedrocked/core/Logger.hpp"
 
 #include <iostream>
 
@@ -8,6 +9,7 @@ namespace bedrocked {
     }
 
     int Application::run() {
+        Logger::info("Bedrocked starting...");
         double accumulator{};
         int frameCount{};
 

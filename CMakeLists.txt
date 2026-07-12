@@ -15,7 +15,8 @@ add_executable(bedrocked
         src/main.cpp
         src/bedrocked/core/Application.cpp
         src/bedrocked/platform/Window.cpp
-        src/bedrocked/core/Timer.cpp)
+        src/bedrocked/core/Timer.cpp
+        src/bedrocked/core/Logger.cpp)
 
 target_compile_features(bedrocked PRIVATE cxx_std_20)
 target_include_directories(bedrocked PRIVATE src)
