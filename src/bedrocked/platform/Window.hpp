@@ -31,6 +31,8 @@ namespace bedrocked {
 
         void requestClose() noexcept;
 
+        void swapBuffers() noexcept;
+
     private:
         GLFWwindow *m_handle{nullptr};
     };

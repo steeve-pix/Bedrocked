@@ -4,6 +4,8 @@
 
 #include <iostream>
 
+#include <glad/glad.h>
+
 namespace bedrocked {
     Application::Application() : m_window(WindowConfig{1280, 720, "Bedrocked Engine"}) {
     }
@@ -21,6 +23,12 @@ namespace bedrocked {
             if (m_window.isKeyDown(Key::Escape)) {
                 m_window.requestClose();
             }
+
+            glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            m_window.swapBuffers();
+
             accumulator += deltaTime;
             frameCount++;
             if (accumulator >= 1.0) {
