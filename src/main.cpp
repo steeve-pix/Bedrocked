@@ -1,7 +1,9 @@
 #include <iostream>
 
-int main() {
-    std::cout << "Bedrocked starting...\n";
+#include "bedrocked/Application.h"
 
-    return 0;
+int main() {
+    bedrocked::Application application;
+
+    return application.run();
 }
