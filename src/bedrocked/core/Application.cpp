@@ -1,10 +1,13 @@
-#include "Application.hpp"
+#include "bedrocked/core/Application.hpp"
 
-#include <iostream>
+namespace bedrocked {
+    Application::Application() : m_window(WindowConfig{1280, 720, "Bedrocked Engine"}) {
+    }
 
-int bedrocked::Application::run() {
-    std::cout << "Bedrocked starting...\n";
-    std::cout << "Bedrocked is shutting down...\n";
-
-    return 0;
+    int Application::run() {
+        while (!m_window.shouldClose()) {
+            m_window.pollEvents();
+        }
+        return 0;
+    }
 }
