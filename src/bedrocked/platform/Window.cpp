@@ -1,5 +1,7 @@
+#include "bedrocked/core/Logger.hpp"
 #include "bedrocked/platform/Window.hpp"
 
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stdexcept>
 
@@ -30,7 +32,13 @@ namespace bedrocked {
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
         // Create the window
-        m_handle = glfwCreateWindow(config.width, config.height, config.title.c_str(), nullptr, nullptr);
+        m_handle = glfwCreateWindow(
+            config.width,
+            config.height,
+            config.title.c_str(),
+            nullptr,
+            nullptr
+        );
 
         if (!m_handle) {
             glfwTerminate();
@@ -39,6 +47,15 @@ namespace bedrocked {
 
         // Bind the OpenGL context to current threaad
         glfwMakeContextCurrent(m_handle);
+
+        // Load OpenGL
+        if (gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)) == 0) {
+            glfwDestroyWindow(m_handle);
+            m_handle = nullptr;
+            glfwTerminate();
+
+            throw std::runtime_error{"Failed to initialize GLAD"};
+        }
     }
 
     Window::~Window() {
@@ -64,5 +81,9 @@ namespace bedrocked {
 
     void Window::requestClose() noexcept {
         glfwSetWindowShouldClose(m_handle,GLFW_TRUE);
+    }
+
+    void Window::swapBuffers() noexcept {
+        glfwSwapBuffers(m_handle);
     }
 }
