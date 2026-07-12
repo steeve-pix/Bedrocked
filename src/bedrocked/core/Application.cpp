@@ -2,9 +2,13 @@
 
 #include <iostream>
 
-int bedrocked::Application::run() {
-    std::cout << "Bedrocked starting...\n";
-    std::cout << "Bedrocked is shutting down...\n";
+namespace bedrocked {
+    Application::Application() : m_window(WindowConfig{1280, 720, "Bedrocked Engine"}) {
+    }
 
-    return 0;
+    void Application::run() {
+        while (!m_window.ShouldClose()) {
+            m_window.pollEvents();
+        }
+    }
 }

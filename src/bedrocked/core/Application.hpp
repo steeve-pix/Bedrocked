@@ -1,7 +1,15 @@
 #pragma once
+#include "bedrocked/platform/Window.hpp"
+
 namespace bedrocked {
     class Application final {
     public:
-        [[nodiscard]] int run();
+        Application();
+
+        ~Application() = default;
+
+        void run();
+    private:
+        Window m_window;
     };
 }
