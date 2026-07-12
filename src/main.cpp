@@ -1,6 +1,4 @@
-#include <iostream>
-
-#include "bedrocked/Application.h"
+#include "bedrocked/core/Application.hpp"
 
 int main() {
     bedrocked::Application application;
