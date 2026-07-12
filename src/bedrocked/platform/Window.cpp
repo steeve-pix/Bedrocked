@@ -1,5 +1,21 @@
 #include "bedrocked/platform/Window.hpp"
 #include <GLFW/glfw3.h>
+#include <stdexcept>
+
+namespace {
+    [[nodiscard]] int toGlfwKey(bedrocked::Key key) noexcept {
+        switch (key) {
+            case bedrocked::Key::Escape: return GLFW_KEY_ESCAPE;
+            case bedrocked::Key::W: return GLFW_KEY_W;
+            case bedrocked::Key::A: return GLFW_KEY_A;
+            case bedrocked::Key::S: return GLFW_KEY_S;
+            case bedrocked::Key::D: return GLFW_KEY_D;
+            case bedrocked::Key::Space: return GLFW_KEY_SPACE;
+            case bedrocked::Key::LeftShift: return GLFW_KEY_LEFT_SHIFT;
+        }
+        return GLFW_KEY_UNKNOWN;
+    }
+} // Anonymouse helper
 
 namespace bedrocked {
     Window::Window(const WindowConfig &config) {
@@ -25,8 +41,9 @@ namespace bedrocked {
     }
 
     Window::~Window() {
-        if (m_handle)
+        if (m_handle) {
             glfwDestroyWindow(m_handle);
+        }
         glfwTerminate();
     }
 
@@ -36,5 +53,15 @@ namespace bedrocked {
 
     void Window::pollEvents() noexcept {
         glfwPollEvents();
+    }
+
+    bool Window::isKeyDown(Key key) const noexcept {
+        const int glfwKey = toGlfwKey(key);
+        if (glfwKey == GLFW_KEY_UNKNOWN) { return false; }
+        return glfwGetKey(m_handle, glfwKey) == GLFW_PRESS;
+    }
+
+    void Window::requestClose() noexcept {
+        glfwSetWindowShouldClose(m_handle,GLFW_TRUE);
     }
 }
