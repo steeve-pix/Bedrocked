@@ -1,7 +1,7 @@
-#include <iostream>
+#include "bedrocked/core/Application.hpp"
 
 int main() {
-    std::cout << "Bedrocked starting...\n";
+    bedrocked::Application application;
 
-    return 0;
+    return application.run();
 }
