@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
-#include <stdexcept>
+
+#include "bedrocked/input/Key.hpp"
 
 struct GLFWwindow;
 
@@ -25,6 +26,10 @@ namespace bedrocked {
         [[nodiscard]] bool shouldClose() const noexcept;
 
         void pollEvents() noexcept;
+
+        [[nodiscard]] bool isKeyDown(Key key) const noexcept;
+
+        void requestClose() noexcept;
 
     private:
         GLFWwindow *m_handle{nullptr};
