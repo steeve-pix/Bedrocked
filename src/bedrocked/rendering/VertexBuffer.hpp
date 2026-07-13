@@ -6,7 +6,7 @@
 namespace bedrocked {
     class VertexBuffer final {
     public:
-        VertexBuffer(const float *data, std::size_t sizeInBytes);
+        VertexBuffer(const void *data, std::size_t sizeInBytes);
 
         ~VertexBuffer();
 

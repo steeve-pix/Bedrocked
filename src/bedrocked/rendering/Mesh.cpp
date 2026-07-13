@@ -1,18 +1,22 @@
 #include "bedrocked/rendering/Mesh.hpp"
+#include "bedrocked/rendering/Vertex.hpp"
 
+#include <cstddef>
 #include <glad/glad.h>
 
 namespace bedrocked {
-    Mesh::Mesh(const float *vertices, std::size_t vertexSizeInBytes, const unsigned int *indices,
+    Mesh::Mesh(const Vertex *vertices, std::size_t vertexSizeInBytes, const unsigned int *indices,
                std::size_t indexCount)
         : m_vertexBuffer{vertices, vertexSizeInBytes} {
         m_vertexArray.bind();
         m_vertexBuffer.bind();
 
-        glVertexAttribPointer(0, 3,GL_FLOAT,GL_FALSE, 6 * sizeof(float), nullptr);
+        glVertexAttribPointer(0, 3,GL_FLOAT,GL_FALSE, sizeof(Vertex),
+                              reinterpret_cast<void *>(offsetof(Vertex, position)));
         glEnableVertexAttribArray(0);
 
-        glVertexAttribPointer(1, 3,GL_FLOAT,GL_FALSE, 6 * sizeof(float), reinterpret_cast<void *>(3 * sizeof(float)));
+        glVertexAttribPointer(1, 3,GL_FLOAT,GL_FALSE, sizeof(Vertex),
+                              reinterpret_cast<void *>(offsetof(Vertex, color)));
         glEnableVertexAttribArray(1);
 
         m_indexBuffer.emplace(indices, indexCount);

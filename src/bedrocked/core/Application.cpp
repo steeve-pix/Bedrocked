@@ -3,6 +3,7 @@
 #include "bedrocked/core/Logger.hpp"
 #include "bedrocked/rendering/ShaderProgram.hpp"
 
+#include <iterator>
 #include <string_view>
 #include <iostream>
 #include <cstdint>
@@ -51,13 +52,25 @@ namespace bedrocked {
 
         m_renderer.setClearColor(0.1F, 0.2F, 0.3F, 1.0F);
 
-        constexpr float vertices[]{
-            // Position             // Color
-            -0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, // red
-            -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, // green
-            0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, // blue
-            0.5f, 0.5f, 0.0f, 1.0f, 1.0f, 0.0f // yellow
+        constexpr Vertex vertices[]{
+            {
+                .position = {-0.5F, 0.5F, 0.0F},
+                .color = {1.0F, 0.0F, 0.0F}
+            },
+            {
+                .position = {-0.5F, -0.5F, 0.0F},
+                .color = {0.0F, 1.0F, 0.0F}
+            },
+            {
+                .position = {0.5F, -0.5F, 0.0F},
+                .color = {0.0F, 0.0F, 1.0F}
+            },
+            {
+                .position = {0.5F, 0.5F, 0.0F},
+                .color = {1.0F, 1.0F, 0.0F}
+            }
         };
+        
         constexpr std::uint32_t indices[]{
             0, 1, 2,
             0, 2, 3
