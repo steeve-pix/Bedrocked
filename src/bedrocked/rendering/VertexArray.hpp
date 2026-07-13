@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 
 namespace bedrocked {
     class VertexArray final {
@@ -14,6 +15,6 @@ namespace bedrocked {
         void bind() const noexcept;
 
     private:
-        unsigned int m_id{};
+        uint32_t m_id{};
     };
 }
