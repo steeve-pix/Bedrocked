@@ -4,8 +4,6 @@
 
 #include <iostream>
 
-#include <glad/glad.h>
-
 namespace bedrocked {
     Application::Application() : m_window(WindowConfig{1280, 720, "Bedrocked Engine"}) {
     }
@@ -15,6 +13,7 @@ namespace bedrocked {
         double accumulator{};
         int frameCount{};
 
+        m_renderer.setClearColor(0.1F, 0.2F, 0.3F, 1.0F);
         while (!m_window.shouldClose()) {
             const double deltaTime = m_timer.tick();
 
@@ -24,13 +23,12 @@ namespace bedrocked {
                 m_window.requestClose();
             }
 
-            glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
-            glClear(GL_COLOR_BUFFER_BIT);
+            m_renderer.clear();
 
             m_window.swapBuffers();
 
             accumulator += deltaTime;
-            frameCount++;
+            ++frameCount;
             if (accumulator >= 1.0) {
                 std::cout << "Loop rate: " << frameCount
                         << " iterations/s | Avg loop time: "
