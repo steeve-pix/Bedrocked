@@ -110,4 +110,19 @@ namespace bedrocked {
     void ShaderProgram::use() const noexcept {
         glUseProgram(m_id);
     }
+
+    void ShaderProgram::setVec3(std::string_view name, float x, float y, float z) const {
+        const std::string uniformName{name};
+        const int location = glGetUniformLocation(m_id, uniformName.c_str());
+
+        glUniform3f(location, x, y, z);
+    }
+
+    void ShaderProgram::setMat4(std::string_view name, const float *values) const {
+        const std::string uniformName{name};
+
+        const int location = glGetUniformLocation(m_id, uniformName.c_str());
+
+        glUniformMatrix4fv(location, 1,GL_FALSE, values);
+    }
 }

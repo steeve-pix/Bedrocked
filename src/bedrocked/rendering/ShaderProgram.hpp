@@ -14,6 +14,10 @@ namespace bedrocked {
 
         void use() const noexcept;
 
+        void setVec3(std::string_view name, float x, float y, float z) const;
+
+        void setMat4(std::string_view name, const float *values) const;
+
     private:
         uint32_t m_id{0};
     };
