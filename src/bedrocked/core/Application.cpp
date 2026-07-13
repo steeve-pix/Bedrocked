@@ -22,21 +22,27 @@ namespace bedrocked {
             #version 330 core
 
             layout(location = 0) in vec3 position;
+            layout(location = 1) in vec3 color;
+
+            out vec3 vertexColor;
 
             void main()
             {
                 gl_Position = vec4(position, 1.0);
+                vertexColor = color;
             }
         )";
 
         constexpr std::string_view fragmentSource = R"(
             #version 330 core
 
+            in vec3 vertexColor;
+
             out vec4 fragmentColor;
 
             void main()
             {
-                fragmentColor = vec4(1.0, 0.5, 0.2, 1.0);
+                fragmentColor = vec4(vertexColor, 1.0);
             }
         )";
 
@@ -46,10 +52,11 @@ namespace bedrocked {
         m_renderer.setClearColor(0.1F, 0.2F, 0.3F, 1.0F);
 
         constexpr float vertices[]{
-            -0.5f, 0.5f, 0.0f,
-            -0.5f, -0.5f, 0.0f,
-            0.5f, -0.5f, 0.0f,
-            0.5f, 0.5f, 0.0f
+            // Position             // Color
+            -0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, // red
+            -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, // green
+            0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, // blue
+            0.5f, 0.5f, 0.0f, 1.0f, 1.0f, 0.0f // yellow
         };
         constexpr std::uint32_t indices[]{
             0, 1, 2,
