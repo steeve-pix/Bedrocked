@@ -2,8 +2,6 @@
 #include "bedrocked/input/Key.hpp"
 #include "bedrocked/core/Logger.hpp"
 #include "bedrocked/rendering/ShaderProgram.hpp"
-#include "bedrocked/rendering/VertexBuffer.hpp"
-#include "bedrocked/rendering/VertexArray.hpp"
 
 #include <string_view>
 #include <iostream>
@@ -51,14 +49,8 @@ namespace bedrocked {
             -0.5f, -0.5f, 0.0f,
             0.5f, -0.5f, 0.0f
         };
-        VertexArray vertexArray;
-        vertexArray.bind();
 
-        VertexBuffer vertexBuffer(vertices, sizeof(vertices));
-        vertexBuffer.bind();
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
-
-        glEnableVertexAttribArray(0);
+        Mesh triangle{vertices, sizeof(vertices), 3};
 
         while (!m_window.shouldClose()) {
             const double deltaTime = m_timer.tick();
@@ -72,9 +64,7 @@ namespace bedrocked {
             m_renderer.clear();
 
             shader.use();
-            vertexArray.bind();
-
-            glDrawArrays(GL_TRIANGLES, 0, 3);
+            m_renderer.draw(triangle);
 
             m_window.swapBuffers();
 

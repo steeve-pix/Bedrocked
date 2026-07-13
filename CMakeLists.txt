@@ -33,6 +33,7 @@ add_executable(bedrocked
         src/bedrocked/rendering/ShaderProgram.cpp
         src/bedrocked/rendering/VertexBuffer.cpp
         src/bedrocked/rendering/VertexArray.cpp
+        src/bedrocked/rendering/Mesh.cpp
 )
 
 target_compile_features(bedrocked PRIVATE cxx_std_20)
