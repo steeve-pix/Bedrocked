@@ -8,8 +8,6 @@ namespace bedrocked {
     public:
         Application();
 
-        ~Application() = default;
-
         [[nodiscard]] int run();
 
     private:

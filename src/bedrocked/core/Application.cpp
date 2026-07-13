@@ -2,9 +2,13 @@
 #include "bedrocked/input/Key.hpp"
 #include "bedrocked/core/Logger.hpp"
 #include "bedrocked/rendering/ShaderProgram.hpp"
+#include "bedrocked/rendering/VertexBuffer.hpp"
+#include "bedrocked/rendering/VertexArray.hpp"
 
 #include <string_view>
 #include <iostream>
+
+#include <glad/glad.h>
 
 namespace bedrocked {
     Application::Application() : m_window(WindowConfig{1280, 720, "Bedrocked Engine"}) {
@@ -42,6 +46,20 @@ namespace bedrocked {
 
         m_renderer.setClearColor(0.1F, 0.2F, 0.3F, 1.0F);
 
+        constexpr float vertices[]{
+            0.0f, 0.5f, 0.0f,
+            -0.5f, -0.5f, 0.0f,
+            0.5f, -0.5f, 0.0f
+        };
+        VertexArray vertexArray;
+        vertexArray.bind();
+
+        VertexBuffer vertexBuffer(vertices, sizeof(vertices));
+        vertexBuffer.bind();
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
+
+        glEnableVertexAttribArray(0);
+
         while (!m_window.shouldClose()) {
             const double deltaTime = m_timer.tick();
 
@@ -52,6 +70,11 @@ namespace bedrocked {
             }
 
             m_renderer.clear();
+
+            shader.use();
+            vertexArray.bind();
+
+            glDrawArrays(GL_TRIANGLES, 0, 3);
 
             m_window.swapBuffers();
 
