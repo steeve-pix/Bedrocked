@@ -5,9 +5,8 @@
 #include <glad/glad.h>
 
 namespace bedrocked {
-    Mesh::Mesh(const Vertex *vertices, std::size_t vertexSizeInBytes, const unsigned int *indices,
-               std::size_t indexCount)
-        : m_vertexBuffer{vertices, vertexSizeInBytes} {
+    Mesh::Mesh(const Vertex *vertices, std::size_t vertexCount, const std::uint32_t *indices, std::size_t indexCount)
+        : m_vertexBuffer{vertices, vertexCount * sizeof(Vertex)} {
         m_vertexArray.bind();
         m_vertexBuffer.bind();
 

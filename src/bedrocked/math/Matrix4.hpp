@@ -60,17 +60,26 @@ namespace bedrocked {
             return Matrix4{result};
         }
 
-        [[nodiscard]] static constexpr Matrix4 scale(
-    float x,
-    float y,
-    float z) noexcept
-        {
-            return Matrix4{{
-                x,    0.0F, 0.0F, 0.0F,
-                0.0F, y,    0.0F, 0.0F,
-                0.0F, 0.0F, z,    0.0F,
-                0.0F, 0.0F, 0.0F, 1.0F
-            }};
+        [[nodiscard]] static constexpr Matrix4 scale(float x, float y, float z) noexcept {
+            return Matrix4{
+                {
+                    x, 0.0F, 0.0F, 0.0F,
+                    0.0F, y, 0.0F, 0.0F,
+                    0.0F, 0.0F, z, 0.0F,
+                    0.0F, 0.0F, 0.0F, 1.0F
+                }
+            };
+        }
+
+        [[nodiscard]] static constexpr Matrix4 aspectCorrection(float aspectRatio) noexcept {
+            return Matrix4{
+                {
+                    1.0F / aspectRatio, 0.0F, 0.0F, 0.0F,
+                    0.0F, 1.0F, 0.0F, 0.0F,
+                    0.0F, 0.0F, 1.0F, 0.0F,
+                    0.0F, 0.0F, 0.0F, 1.0F
+                }
+            };
         }
 
     private:
