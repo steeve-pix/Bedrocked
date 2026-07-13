@@ -30,6 +30,7 @@ add_executable(bedrocked
         src/bedrocked/core/Timer.cpp
         src/bedrocked/platform/Window.cpp
         src/bedrocked/rendering/Renderer.cpp
+        src/bedrocked/rendering/ShaderProgram.cpp
 )
 
 target_compile_features(bedrocked PRIVATE cxx_std_20)
