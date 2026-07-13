@@ -10,6 +10,8 @@
 #include <cstdint>
 #include <glad/glad.h>
 
+#include "bedrocked/math/Matrix4.hpp"
+
 namespace bedrocked {
     Application::Application() : m_window(WindowConfig{1280, 720, "Bedrocked Engine"}) {
     }
@@ -25,11 +27,13 @@ namespace bedrocked {
             layout(location = 0) in vec3 position;
             layout(location = 1) in vec3 color;
 
+            uniform mat4 model;
+
             out vec3 vertexColor;
 
             void main()
             {
-                gl_Position = vec4(position, 1.0);
+                gl_Position = model * vec4(position, 1.0);
                 vertexColor = color;
             }
         )";
@@ -70,11 +74,13 @@ namespace bedrocked {
                 .color = {1.0F, 1.0F, 0.0F}
             }
         };
-        
+
         constexpr std::uint32_t indices[]{
             0, 1, 2,
             0, 2, 3
         };
+
+        constexpr Matrix4 model = Matrix4::translation(0.25f, 0.0f, 0.0f);
 
         Mesh square{vertices, sizeof(vertices), indices, std::size(indices)};
 
@@ -90,6 +96,8 @@ namespace bedrocked {
             m_renderer.clear();
 
             shader.use();
+            shader.setVec3("translation", 0.25f, 0.0f, 0.0f);
+            shader.setMat4("model", model.data());
             m_renderer.draw(square);
 
             m_window.swapBuffers();
