@@ -79,8 +79,20 @@ namespace bedrocked {
             0, 1, 2,
             0, 2, 3
         };
+        constexpr float pi = 3.14159265358979323846F;
 
-        constexpr Matrix4 model = Matrix4::translation(0.25f, 0.0f, 0.0f);
+        const Matrix4 translation =
+                Matrix4::translation(0.25F, 0.0F, 0.0F);
+
+        const Matrix4 rotation =
+                Matrix4::rotationZ(pi / 4.0F);
+
+        const Matrix4 scaling =
+                Matrix4::scale(0.5F, 0.5F, 1.0F);
+
+        const Matrix4 model =
+                translation * rotation * scaling;
+
 
         Mesh square{vertices, sizeof(vertices), indices, std::size(indices)};
 
