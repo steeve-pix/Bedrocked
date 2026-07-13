@@ -14,6 +14,11 @@ namespace bedrocked {
     void Renderer::draw(const Mesh &mesh) noexcept {
         mesh.bind();
 
-        glDrawArrays(GL_TRIANGLES, 0, mesh.vertexCount());
+        glDrawElements(
+            GL_TRIANGLES,
+            static_cast<GLsizei>(mesh.indexCount()),
+            GL_UNSIGNED_INT,
+            nullptr
+        );
     }
 }

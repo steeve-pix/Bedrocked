@@ -5,7 +5,8 @@
 
 #include <string_view>
 #include <iostream>
-
+#include <cstdint>
+#include <cstdint>
 #include <glad/glad.h>
 
 namespace bedrocked {
@@ -45,12 +46,17 @@ namespace bedrocked {
         m_renderer.setClearColor(0.1F, 0.2F, 0.3F, 1.0F);
 
         constexpr float vertices[]{
-            0.0f, 0.5f, 0.0f,
+            -0.5f, 0.5f, 0.0f,
             -0.5f, -0.5f, 0.0f,
-            0.5f, -0.5f, 0.0f
+            0.5f, -0.5f, 0.0f,
+            0.5f, 0.5f, 0.0f
+        };
+        constexpr std::uint32_t indices[]{
+            0, 1, 2,
+            0, 2, 3
         };
 
-        Mesh triangle{vertices, sizeof(vertices), 3};
+        Mesh square{vertices, sizeof(vertices), indices, std::size(indices)};
 
         while (!m_window.shouldClose()) {
             const double deltaTime = m_timer.tick();
@@ -64,7 +70,7 @@ namespace bedrocked {
             m_renderer.clear();
 
             shader.use();
-            m_renderer.draw(triangle);
+            m_renderer.draw(square);
 
             m_window.swapBuffers();
 
