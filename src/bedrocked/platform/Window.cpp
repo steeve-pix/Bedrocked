@@ -1,4 +1,3 @@
-#include "bedrocked/core/Logger.hpp"
 #include "bedrocked/platform/Window.hpp"
 
 #include <glad/glad.h>

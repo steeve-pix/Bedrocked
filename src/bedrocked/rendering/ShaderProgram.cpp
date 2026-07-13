@@ -1,5 +1,6 @@
 #include "bedrocked/rendering/ShaderProgram.hpp"
 
+#include <string>
 #include <stdexcept>
 #include <glad/glad.h>
 
