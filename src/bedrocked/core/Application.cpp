@@ -1,7 +1,9 @@
 #include "bedrocked/core/Application.hpp"
 #include "bedrocked/input/Key.hpp"
 #include "bedrocked/core/Logger.hpp"
+#include "bedrocked/rendering/ShaderProgram.hpp"
 
+#include <string_view>
 #include <iostream>
 
 namespace bedrocked {
@@ -13,7 +15,33 @@ namespace bedrocked {
         double accumulator{};
         int frameCount{};
 
+        constexpr std::string_view vertexSource = R"(
+            #version 330 core
+
+            layout(location = 0) in vec3 position;
+
+            void main()
+            {
+                gl_Position = vec4(position, 1.0);
+            }
+        )";
+
+        constexpr std::string_view fragmentSource = R"(
+            #version 330 core
+
+            out vec4 fragmentColor;
+
+            void main()
+            {
+                fragmentColor = vec4(1.0, 0.5, 0.2, 1.0);
+            }
+        )";
+
+        ShaderProgram shader(vertexSource, fragmentSource);
+        shader.use();
+
         m_renderer.setClearColor(0.1F, 0.2F, 0.3F, 1.0F);
+
         while (!m_window.shouldClose()) {
             const double deltaTime = m_timer.tick();
 

@@ -11,6 +11,7 @@ namespace bedrocked {
         ~Application() = default;
 
         [[nodiscard]] int run();
+
     private:
         Window m_window;
         Timer m_timer;
