@@ -3,7 +3,7 @@
 #include <glad/glad.h>
 
 namespace bedrocked {
-    VertexBuffer::VertexBuffer(const float *data, std::size_t sizeInBytes) {
+    VertexBuffer::VertexBuffer(const void *data, std::size_t sizeInBytes) {
         glGenBuffers(1, &m_id);
 
         glBindBuffer(GL_ARRAY_BUFFER, m_id);
