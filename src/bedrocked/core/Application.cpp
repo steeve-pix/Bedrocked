@@ -7,8 +7,6 @@
 #include <string_view>
 #include <iostream>
 #include <cstdint>
-#include <cstdint>
-#include <glad/glad.h>
 
 #include "bedrocked/math/Matrix4.hpp"
 
@@ -28,12 +26,13 @@ namespace bedrocked {
             layout(location = 1) in vec3 color;
 
             uniform mat4 model;
+            uniform mat4 projection;
 
             out vec3 vertexColor;
 
             void main()
             {
-                gl_Position = model * vec4(position, 1.0);
+                gl_Position = projection * model * vec4(position, 1.0);
                 vertexColor = color;
             }
         )";
@@ -80,6 +79,8 @@ namespace bedrocked {
             0, 2, 3
         };
         constexpr float pi = 3.14159265358979323846F;
+        constexpr float aspectRatio =
+                1280.0F / 720.0F;
 
         const Matrix4 translation =
                 Matrix4::translation(0.25F, 0.0F, 0.0F);
@@ -93,8 +94,9 @@ namespace bedrocked {
         const Matrix4 model =
                 translation * rotation * scaling;
 
+        const Matrix4 projection = Matrix4::aspectCorrection(aspectRatio);
 
-        Mesh square{vertices, sizeof(vertices), indices, std::size(indices)};
+        Mesh square{vertices, std::size(vertices), indices, std::size(indices)};
 
         while (!m_window.shouldClose()) {
             const double deltaTime = m_timer.tick();
@@ -108,8 +110,8 @@ namespace bedrocked {
             m_renderer.clear();
 
             shader.use();
-            shader.setVec3("translation", 0.25f, 0.0f, 0.0f);
             shader.setMat4("model", model.data());
+            shader.setMat4("projection", projection.data());
             m_renderer.draw(square);
 
             m_window.swapBuffers();

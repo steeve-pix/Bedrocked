@@ -10,7 +10,7 @@
 namespace bedrocked {
     class Mesh final {
     public:
-        Mesh(const Vertex *vertices, std::size_t vertexSizeInBytes, const unsigned int *indices, std::size_t indexCount);
+        Mesh(const Vertex *vertices, std::size_t vertexCount, const std::uint32_t *indices, std::size_t);
 
         Mesh(const Mesh &) = delete;
 
