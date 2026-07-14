@@ -15,6 +15,8 @@
 #include <array>
 #include <glad/glad.h>
 
+#include "bedrocked/assets/Image.hpp"
+
 namespace bedrocked {
     namespace {
         // RENDERING CONFIG
@@ -119,17 +121,6 @@ namespace bedrocked {
             16, 17, 18, 16, 18, 19,
             20, 21, 22, 20, 22, 23
         };
-
-        // RGBA PIXELS
-        constexpr std::array<std::uint8_t, 16> checkerboardPixels{
-            // Bottom row
-            255, 255, 255, 255, // white
-            40, 40, 40, 255, // dark
-
-            // Top row
-            40, 40, 40, 255, // dark
-            255, 255, 255, 255 // white
-        };
     } // namespace
 
     Application::Application()
@@ -142,6 +133,15 @@ namespace bedrocked {
         ShaderProgram shader(kVertexShaderSource, kFragmentShaderSource);
 
         Mesh cube{kCubeVertices, std::size(kCubeVertices), kCubeIndices, std::size(kCubeIndices)};
+
+        // RGBA PIXELS
+        Image blockImage{"assets/textures/block.png"};
+
+        Texture2D blockTexture{
+            blockImage.width(),
+            blockImage.height(),
+            blockImage.pixels()
+        };
 
         Camera camera;
 
@@ -159,8 +159,6 @@ namespace bedrocked {
 
         double statisticsElapsedTime = 0.0;
         int loopCount = 0;
-
-        Texture2D checkerboard{2, 2, checkerboardPixels.data()};
 
         while (!m_window.shouldClose()) {
             const double deltaTime = m_timer.tick();
@@ -250,7 +248,7 @@ namespace bedrocked {
             m_renderer.clear();
 
             glActiveTexture(GL_TEXTURE0);
-            checkerboard.bind();
+            blockTexture.bind();
 
             shader.use();
             shader.setInt("blockTexture", 0);

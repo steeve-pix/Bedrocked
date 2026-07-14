@@ -1,4 +1,4 @@
-#include "Texture2D.hpp"
+#include "bedrocked/rendering/Texture2D.hpp"
 
 #include <glad/glad.h>
 

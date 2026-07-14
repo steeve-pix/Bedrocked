@@ -37,10 +37,12 @@ add_executable(bedrocked
         src/bedrocked/rendering/IndexBuffer.cpp
         src/bedrocked/rendering/Camera.cpp
         src/bedrocked/rendering/Texture2D.cpp
+        src/bedrocked/assets/Image.cpp
+        third_party/stb/stb_image.h
 )
 
 target_compile_features(bedrocked PRIVATE cxx_std_20)
 
-target_include_directories(bedrocked PRIVATE src)
+target_include_directories(bedrocked PRIVATE src third_party/stb)
 
 target_link_libraries(bedrocked PRIVATE glfw glad OpenGL::GL)
