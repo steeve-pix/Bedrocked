@@ -9,6 +9,8 @@
 #include <iostream>
 #include <cstdint>
 
+#include "bedrocked/rendering/Camera.hpp"
+
 
 namespace bedrocked {
     Application::Application() : m_window(WindowConfig{1280, 720, "Bedrocked Engine"}) {
@@ -26,13 +28,14 @@ namespace bedrocked {
             layout(location = 1) in vec3 color;
 
             uniform mat4 model;
+            uniform mat4 view;
             uniform mat4 projection;
 
             out vec3 vertexColor;
 
             void main()
             {
-                gl_Position = projection * model * vec4(position, 1.0);
+                gl_Position = projection * view * model * vec4(position, 1.0);
                 vertexColor = color;
             }
         )";
@@ -96,18 +99,13 @@ namespace bedrocked {
         };
         constexpr float pi = 3.14159265358979323846F;
 
-        const Matrix4 translation =
-                Matrix4::translation(0.0F, 0.0F, -2.0F);
-
-        const Matrix4 rotation =
-                Matrix4::rotationZ(pi / 4.0F);
-
-        const Matrix4 scaling =
-                Matrix4::scale(0.5F, 0.5F, 1.0F);
-
         Mesh cube{vertices, std::size(vertices), indices, std::size(indices)};
 
         float rotationAngle{};
+
+        Camera camera;
+
+        camera.move(0.0F, 0.0F, 1.0F);
 
         while (!m_window.shouldClose()) {
             const double deltaTime = m_timer.tick();
@@ -122,6 +120,9 @@ namespace bedrocked {
                     Matrix4::rotationX(rotationAngle * 0.5F);
 
             m_window.pollEvents();
+
+            constexpr float cameraSpeed = 2.0f;
+            const float movement = cameraSpeed * static_cast<float>(deltaTime);
 
             const FrameBufferSize framebufferSize = m_window.framebufferSize();
             if (framebufferSize.width <= 0 || framebufferSize.height <= 0) {
@@ -141,10 +142,28 @@ namespace bedrocked {
                 m_window.requestClose();
             }
 
+            if (m_window.isKeyDown(Key::W)) {
+                camera.move(0.0f, 0.0f, -movement);
+            }
+
+            if (m_window.isKeyDown(Key::S)) {
+                camera.move(0.0f, 0.0f, movement);
+            }
+            if (m_window.isKeyDown(Key::A)) {
+                camera.move(-movement, 0.0f, 0.0f);
+            }
+
+            if (m_window.isKeyDown(Key::D)) {
+                camera.move(movement, 0.0f, 0.0f);
+            }
+
             m_renderer.clear();
+
+            const Matrix4 view = camera.viewMatrix();
 
             shader.use();
             shader.setMat4("projection", projection.data());
+            shader.setMat4("view", view.data());
             shader.setMat4("model", model.data());
             m_renderer.draw(cube);
 
