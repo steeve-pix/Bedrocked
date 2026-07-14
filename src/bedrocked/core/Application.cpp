@@ -56,27 +56,43 @@ namespace bedrocked {
         m_renderer.setClearColor(0.1F, 0.2F, 0.3F, 1.0F);
 
         constexpr Vertex vertices[]{
-            {
-                .position = {-0.5F, 0.5F, 0.0F},
-                .color = {1.0F, 0.0F, 0.0F}
-            },
-            {
-                .position = {-0.5F, -0.5F, 0.0F},
-                .color = {0.0F, 1.0F, 0.0F}
-            },
-            {
-                .position = {0.5F, -0.5F, 0.0F},
-                .color = {0.0F, 0.0F, 1.0F}
-            },
-            {
-                .position = {0.5F, 0.5F, 0.0F},
-                .color = {1.0F, 1.0F, 0.0F}
-            }
+            // Front: z = 0.5
+            {{-0.5F, -0.5F, 0.5F}, {1.0F, 0.0F, 0.0F}},
+            {{0.5F, -0.5F, 0.5F}, {0.0F, 1.0F, 0.0F}},
+            {{0.5F, 0.5F, 0.5F}, {0.0F, 0.0F, 1.0F}},
+            {{-0.5F, 0.5F, 0.5F}, {1.0F, 1.0F, 0.0F}},
+
+            // Back: z = -0.5
+            {{-0.5F, -0.5F, -0.5F}, {1.0F, 0.0F, 1.0F}},
+            {{0.5F, -0.5F, -0.5F}, {0.0F, 1.0F, 1.0F}},
+            {{0.5F, 0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}},
+            {{-0.5F, 0.5F, -0.5F}, {0.3F, 0.3F, 0.3F}}
         };
 
         constexpr std::uint32_t indices[]{
+            // Front
             0, 1, 2,
-            0, 2, 3
+            0, 2, 3,
+
+            // Back
+            5, 4, 7,
+            5, 7, 6,
+
+            // Left
+            4, 0, 3,
+            4, 3, 7,
+
+            // Right
+            1, 5, 6,
+            1, 6, 2,
+
+            // Top
+            3, 2, 6,
+            3, 6, 7,
+
+            // Bottom
+            4, 5, 1,
+            4, 1, 0
         };
         constexpr float pi = 3.14159265358979323846F;
 
@@ -90,9 +106,11 @@ namespace bedrocked {
                 Matrix4::scale(0.5F, 0.5F, 1.0F);
 
         const Matrix4 model =
-                translation * rotation * scaling;
+                Matrix4::translation(0.0F, 0.0F, -3.0F) *
+                Matrix4::rotationY(pi / 4.0F) *
+                Matrix4::rotationX(pi / 6.0F);
 
-        Mesh square{vertices, std::size(vertices), indices, std::size(indices)};
+        Mesh cube{vertices, std::size(vertices), indices, std::size(indices)};
 
         const Matrix4 nearModel = Matrix4::translation(-0.15f, 0.0f, -2.0f) * Matrix4::rotationZ(pi / 4.0f) *
                                   Matrix4::scale(0.5f, 0.5f, 0.5f);
@@ -126,11 +144,8 @@ namespace bedrocked {
 
             shader.use();
             shader.setMat4("projection", projection.data());
-            shader.setMat4("model", nearModel.data());
-            m_renderer.draw(square);
-
-            shader.setMat4("model", farModel.data());
-            m_renderer.draw(square);
+            shader.setMat4("model", model.data());
+            m_renderer.draw(cube);
 
             m_window.swapBuffers();
 
