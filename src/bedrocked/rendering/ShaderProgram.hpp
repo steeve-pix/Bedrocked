@@ -18,6 +18,8 @@ namespace bedrocked {
 
         void setMat4(std::string_view name, const float *values) const;
 
+        void setInt(std::string_view name, int value) const;
+
     private:
         uint32_t m_id{0};
     };

@@ -125,4 +125,13 @@ namespace bedrocked {
 
         glUniformMatrix4fv(location, 1,GL_FALSE, values);
     }
+
+    void ShaderProgram::setInt(std::string_view name, int value) const {
+        const std::string uniformName{name};
+
+        const int location =
+                glGetUniformLocation(m_id, uniformName.c_str());
+
+        glUniform1i(location, value);
+    }
 } // namespace bedrocked
