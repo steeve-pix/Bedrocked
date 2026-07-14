@@ -4,6 +4,7 @@ namespace bedrocked {
     public:
         float position[3];
         float color[3];
+        float textureCoordinates[2];
     };
 } // namespace bedrocked
 

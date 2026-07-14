@@ -6,12 +6,14 @@
 #include "bedrocked/rendering/Camera.hpp"
 #include "bedrocked/rendering/Mesh.hpp"
 #include "bedrocked/rendering/Vertex.hpp"
+#include "bedrocked/rendering/Texture2D.hpp"
 
 #include <iterator>
 #include <string_view>
 #include <iostream>
 #include <cstdint>
-
+#include <array>
+#include <glad/glad.h>
 
 namespace bedrocked {
     namespace {
@@ -34,17 +36,22 @@ namespace bedrocked {
 
             layout(location = 0) in vec3 position;
             layout(location = 1) in vec3 color;
+            layout(location = 2) in vec2 textureCoordinates;
 
             uniform mat4 model;
             uniform mat4 view;
             uniform mat4 projection;
 
             out vec3 vertexColor;
+            out vec2 vertexTextureCoordinates;
 
             void main()
             {
-                gl_Position = projection * view * model * vec4(position, 1.0);
+                gl_Position =
+                    projection * view * model * vec4(position, 1.0);
+
                 vertexColor = color;
+                vertexTextureCoordinates = textureCoordinates;
             }
         )";
 
@@ -52,54 +59,76 @@ namespace bedrocked {
             #version 330 core
 
             in vec3 vertexColor;
+            in vec2 vertexTextureCoordinates;
+
+            uniform sampler2D blockTexture;
 
             out vec4 fragmentColor;
 
             void main()
             {
-                fragmentColor = vec4(vertexColor, 1.0);
+                fragmentColor =
+                    texture(blockTexture, vertexTextureCoordinates);
             }
         )";
 
         // CUBE GEOMETRY
         constexpr Vertex kCubeVertices[]{
-            // Front: z = 0.5
-            {{-0.5F, -0.5F, 0.5F}, {1.0F, 0.0F, 0.0F}},
-            {{0.5F, -0.5F, 0.5F}, {0.0F, 1.0F, 0.0F}},
-            {{0.5F, 0.5F, 0.5F}, {0.0F, 0.0F, 1.0F}},
-            {{-0.5F, 0.5F, 0.5F}, {1.0F, 1.0F, 0.0F}},
+            // Front
+            {{-0.5F, -0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {0.0F, 0.0F}},
+            {{+0.5F, -0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {1.0F, 0.0F}},
+            {{+0.5F, +0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {1.0F, 1.0F}},
+            {{-0.5F, +0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {0.0F, 1.0F}},
 
-            // Back: z = -0.5
-            {{-0.5F, -0.5F, -0.5F}, {1.0F, 0.0F, 1.0F}},
-            {{0.5F, -0.5F, -0.5F}, {0.0F, 1.0F, 1.0F}},
-            {{0.5F, 0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}},
-            {{-0.5F, 0.5F, -0.5F}, {0.3F, 0.3F, 0.3F}}
+            // Back
+            {{+0.5F, -0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {0.0F, 0.0F}},
+            {{-0.5F, -0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {1.0F, 0.0F}},
+            {{-0.5F, +0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {1.0F, 1.0F}},
+            {{+0.5F, +0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {0.0F, 1.0F}},
+
+            // Left
+            {{-0.5F, -0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {0.0F, 0.0F}},
+            {{-0.5F, -0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {1.0F, 0.0F}},
+            {{-0.5F, +0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {1.0F, 1.0F}},
+            {{-0.5F, +0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {0.0F, 1.0F}},
+
+            // Right
+            {{+0.5F, -0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {0.0F, 0.0F}},
+            {{+0.5F, -0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {1.0F, 0.0F}},
+            {{+0.5F, +0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {1.0F, 1.0F}},
+            {{+0.5F, +0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {0.0F, 1.0F}},
+
+            // Top
+            {{-0.5F, +0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {0.0F, 0.0F}},
+            {{+0.5F, +0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {1.0F, 0.0F}},
+            {{+0.5F, +0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {1.0F, 1.0F}},
+            {{-0.5F, +0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {0.0F, 1.0F}},
+
+            // Bottom
+            {{-0.5F, -0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {0.0F, 0.0F}},
+            {{+0.5F, -0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {1.0F, 0.0F}},
+            {{+0.5F, -0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {1.0F, 1.0F}},
+            {{-0.5F, -0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {0.0F, 1.0F}}
         };
 
         constexpr std::uint32_t kCubeIndices[]{
-            // Front
-            0, 1, 2,
-            0, 2, 3,
+            0, 1, 2, 0, 2, 3,
+            4, 5, 6, 4, 6, 7,
+            8, 9, 10, 8, 10, 11,
+            12, 13, 14, 12, 14, 15,
+            16, 17, 18, 16, 18, 19,
+            20, 21, 22, 20, 22, 23
+        };
 
-            // Back
-            5, 4, 7,
-            5, 7, 6,
+        // RGBA PIXELS
+        constexpr std::array<std::uint8_t, 16> checkerboardPixels{
+            // Bottom row
+            255, 255, 255, 255, // white
+            40, 40, 40, 255, // dark
 
-            // Left
-            4, 0, 3,
-            4, 3, 7,
-
-            // Right
-            1, 5, 6,
-            1, 6, 2,
-
-            // Top
-            3, 2, 6,
-            3, 6, 7,
-
-            // Bottom
-            4, 5, 1,
-            4, 1, 0
+            // Top row
+            40, 40, 40, 255, // dark
+            255, 255, 255, 255 // white
         };
     } // namespace
 
@@ -130,6 +159,8 @@ namespace bedrocked {
 
         double statisticsElapsedTime = 0.0;
         int loopCount = 0;
+
+        Texture2D checkerboard{2, 2, checkerboardPixels.data()};
 
         while (!m_window.shouldClose()) {
             const double deltaTime = m_timer.tick();
@@ -218,7 +249,11 @@ namespace bedrocked {
             // RENDERING
             m_renderer.clear();
 
+            glActiveTexture(GL_TEXTURE0);
+            checkerboard.bind();
+
             shader.use();
+            shader.setInt("blockTexture", 0);
             shader.setMat4("projection", projection.data());
             shader.setMat4("view", view.data());
             shader.setMat4("model", model.data());

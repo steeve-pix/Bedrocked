@@ -18,6 +18,10 @@ namespace bedrocked {
                               reinterpret_cast<void *>(offsetof(Vertex, color)));
         glEnableVertexAttribArray(1);
 
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                              reinterpret_cast<void *>(offsetof(Vertex, textureCoordinates)));
+        glEnableVertexAttribArray(2);
+
         m_indexBuffer.emplace(indices, indexCount);
     }
 

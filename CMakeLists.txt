@@ -36,6 +36,7 @@ add_executable(bedrocked
         src/bedrocked/rendering/Mesh.cpp
         src/bedrocked/rendering/IndexBuffer.cpp
         src/bedrocked/rendering/Camera.cpp
+        src/bedrocked/rendering/Texture2D.cpp
 )
 
 target_compile_features(bedrocked PRIVATE cxx_std_20)
