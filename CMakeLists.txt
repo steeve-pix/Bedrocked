@@ -2,7 +2,16 @@ cmake_minimum_required(VERSION 3.20)
 
 project(Bedrocked LANGUAGES C CXX)
 
+# Generates compile_commands.json
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 include(FetchContent)
+
+# GLFW libs
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
 
 FetchContent_Declare(
         glfw
@@ -14,36 +23,22 @@ FetchContent_MakeAvailable(glfw)
 
 find_package(OpenGL REQUIRED)
 
+#
 add_library(glad STATIC
         third_party/glad/src/glad.c
 )
 
 target_include_directories(glad
         PUBLIC
-        third_party/glad/include
+        ${PROJECT_SOURCE_DIR}/third_party/glad/include
 )
 
-add_executable(bedrocked
-        src/main.cpp
-        src/bedrocked/core/Application.cpp
-        src/bedrocked/core/Logger.cpp
-        src/bedrocked/core/Timer.cpp
-        src/bedrocked/platform/Window.cpp
-        src/bedrocked/rendering/Renderer.cpp
-        src/bedrocked/rendering/ShaderProgram.cpp
-        src/bedrocked/rendering/VertexBuffer.cpp
-        src/bedrocked/rendering/VertexArray.cpp
-        src/bedrocked/rendering/Mesh.cpp
-        src/bedrocked/rendering/IndexBuffer.cpp
-        src/bedrocked/rendering/Camera.cpp
-        src/bedrocked/rendering/Texture2D.cpp
-        src/bedrocked/assets/Image.cpp
-        third_party/stb/stb_image.h
-        src/bedrocked/rendering/TextureAtlasLayout.hpp
+add_library(stb INTERFACE)
+
+target_include_directories(stb
+        INTERFACE
+        "${PROJECT_SOURCE_DIR}/third_party/stb"
 )
 
-target_compile_features(bedrocked PRIVATE cxx_std_20)
-
-target_include_directories(bedrocked PRIVATE src third_party/stb)
-
-target_link_libraries(bedrocked PRIVATE glfw glad OpenGL::GL)
+add_subdirectory(engine)
+add_subdirectory(app)
