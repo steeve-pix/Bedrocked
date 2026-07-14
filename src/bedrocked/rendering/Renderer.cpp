@@ -5,6 +5,10 @@
 namespace bedrocked {
     Renderer::Renderer() {
         glEnable(GL_DEPTH_TEST);
+
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+        glFrontFace(GL_CCW);
     }
 
     void Renderer::setClearColor(float red, float green, float blue, float alpha) noexcept {
