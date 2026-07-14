@@ -94,6 +94,11 @@ namespace bedrocked {
 
         Mesh square{vertices, std::size(vertices), indices, std::size(indices)};
 
+        const Matrix4 nearModel = Matrix4::translation(-0.15f, 0.0f, -2.0f) * Matrix4::rotationZ(pi / 4.0f) *
+                                  Matrix4::scale(0.5f, 0.5f, 0.5f);
+        const Matrix4 farModel = Matrix4::translation(0.15f, 0.0f, -3.0f) * Matrix4::rotationZ(pi / 4.0f) *
+                                 Matrix4::scale(0.7f, 0.7f, 0.7f);
+
         while (!m_window.shouldClose()) {
             const double deltaTime = m_timer.tick();
 
@@ -120,20 +125,23 @@ namespace bedrocked {
             m_renderer.clear();
 
             shader.use();
-            shader.setMat4("model", model.data());
             shader.setMat4("projection", projection.data());
+            shader.setMat4("model", nearModel.data());
+            m_renderer.draw(square);
+
+            shader.setMat4("model", farModel.data());
             m_renderer.draw(square);
 
             m_window.swapBuffers();
 
             accumulator += deltaTime;
             ++frameCount;
-            if (accumulator >= 1.0) {
+            if (accumulator >= 10.0) {
                 std::cout << "Loop rate: " << frameCount
                         << " iterations/s | Avg loop time: "
                         << (accumulator / frameCount) * 1'000.0
                         << " ms\n";
-                accumulator -= 1.0;
+                accumulator -= 10.0;
                 frameCount = 0;
             }
         }
