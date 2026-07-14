@@ -1,7 +1,6 @@
 #pragma once
-#include <string>
-
 #include "bedrocked/input/Key.hpp"
+#include <string>
 
 struct GLFWwindow;
 
@@ -15,6 +14,10 @@ namespace bedrocked {
     struct FrameBufferSize {
         int width;
         int height;
+    };
+
+    struct CursorPosition {
+        double x, y;
     };
 
     class Window final {
@@ -40,7 +43,11 @@ namespace bedrocked {
 
         [[nodiscard]] FrameBufferSize framebufferSize() const noexcept;
 
+        [[nodiscard]] CursorPosition cursorPosition() const noexcept;
+
+        void setCursorCaptured(bool captured) noexcept;
+
     private:
         GLFWwindow *m_handle{nullptr};
     };
-}
+} // namespace bedrocked

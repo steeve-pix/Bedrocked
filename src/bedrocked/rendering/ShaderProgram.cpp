@@ -125,4 +125,4 @@ namespace bedrocked {
 
         glUniformMatrix4fv(location, 1,GL_FALSE, values);
     }
-}
+} // namespace bedrocked

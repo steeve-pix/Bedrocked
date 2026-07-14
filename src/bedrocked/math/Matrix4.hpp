@@ -135,4 +135,4 @@ namespace bedrocked {
 
         std::array<float, 16> m_values{};
     };
-}
+} // namespace bedrocked

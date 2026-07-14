@@ -14,4 +14,4 @@ namespace bedrocked {
 
         void setViewPort(int width, int height) noexcept;
     };
-}
+} // namespace bedrocked

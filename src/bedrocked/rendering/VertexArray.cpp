@@ -16,4 +16,4 @@ namespace bedrocked {
     void VertexArray::bind() const noexcept {
         glBindVertexArray(m_id);
     }
-}
+} // namespace bedrocked
