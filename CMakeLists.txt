@@ -39,6 +39,7 @@ add_executable(bedrocked
         src/bedrocked/rendering/Texture2D.cpp
         src/bedrocked/assets/Image.cpp
         third_party/stb/stb_image.h
+        src/bedrocked/rendering/TextureAtlasLayout.hpp
 )
 
 target_compile_features(bedrocked PRIVATE cxx_std_20)
