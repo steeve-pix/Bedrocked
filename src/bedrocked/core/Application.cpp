@@ -1,5 +1,6 @@
 #include "bedrocked/core/Application.hpp"
 #include "bedrocked/input/Key.hpp"
+#include "bedrocked/math/Matrix4.hpp"
 #include "bedrocked/core/Logger.hpp"
 #include "bedrocked/rendering/ShaderProgram.hpp"
 
@@ -8,7 +9,6 @@
 #include <iostream>
 #include <cstdint>
 
-#include "bedrocked/math/Matrix4.hpp"
 
 namespace bedrocked {
     Application::Application() : m_window(WindowConfig{1280, 720, "Bedrocked Engine"}) {
@@ -79,8 +79,6 @@ namespace bedrocked {
             0, 2, 3
         };
         constexpr float pi = 3.14159265358979323846F;
-        constexpr float aspectRatio =
-                1280.0F / 720.0F;
 
         const Matrix4 translation =
                 Matrix4::translation(0.25F, 0.0F, 0.0F);
@@ -94,8 +92,6 @@ namespace bedrocked {
         const Matrix4 model =
                 translation * rotation * scaling;
 
-        const Matrix4 projection = Matrix4::aspectCorrection(aspectRatio);
-
         Mesh square{vertices, std::size(vertices), indices, std::size(indices)};
 
         while (!m_window.shouldClose()) {
@@ -103,6 +99,19 @@ namespace bedrocked {
 
             m_window.pollEvents();
 
+            const FrameBufferSize framebufferSize = m_window.framebufferSize();
+            if (framebufferSize.width <= 0 || framebufferSize.height <= 0) {
+                continue;
+            }
+            m_renderer.setViewPort(framebufferSize.width, framebufferSize.height);
+
+            const float aspectRatio =
+                    static_cast<float>(framebufferSize.width) / static_cast<float>(framebufferSize.height);
+
+            const Matrix4 projection = Matrix4::aspectCorrection(aspectRatio);
+
+
+            // Close with if Escape key is pressed
             if (m_window.isKeyDown(Key::Escape)) {
                 m_window.requestClose();
             }

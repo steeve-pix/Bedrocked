@@ -85,4 +85,12 @@ namespace bedrocked {
     void Window::swapBuffers() noexcept {
         glfwSwapBuffers(m_handle);
     }
+
+    FrameBufferSize Window::framebufferSize() const noexcept {
+        FrameBufferSize size{};
+
+        glfwGetFramebufferSize(m_handle, &size.width, &size.height);
+
+        return size;
+    }
 }

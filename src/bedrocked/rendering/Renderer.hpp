@@ -9,5 +9,7 @@ namespace bedrocked {
         void clear() noexcept;
 
         void draw(const Mesh &mesh) noexcept;
+
+        void setViewPort(int width, int height) noexcept;
     };
 }
