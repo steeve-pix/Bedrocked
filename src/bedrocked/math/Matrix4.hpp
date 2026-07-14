@@ -28,6 +28,34 @@ namespace bedrocked {
             };
         }
 
+        [[nodiscard]] static Matrix4 rotationX(float angleRadians) noexcept {
+            const float cosine = std::cos(angleRadians);
+            const float sine = std::sin(angleRadians);
+
+            return Matrix4{
+                {
+                    1.0F, 0.0F, 0.0F, 0.0F,
+                    0.0F, cosine, sine, 0.0F,
+                    0.0F, -sine, cosine, 0.0F,
+                    0.0F, 0.0F, 0.0F, 1.0F
+                }
+            };
+        }
+
+        [[nodiscard]] static Matrix4 rotationY(float angleRadians) noexcept {
+            const float cosine = std::cos(angleRadians);
+            const float sine = std::sin(angleRadians);
+
+            return Matrix4{
+                {
+                    cosine, 0.0F, -sine, 0.0F,
+                    0.0F, 1.0F, 0.0F, 0.0F,
+                    sine, 0.0F, cosine, 0.0F,
+                    0.0F, 0.0F, 0.0F, 1.0F
+                }
+            };
+        }
+
         [[nodiscard]] static Matrix4 rotationZ(float angleRadians) noexcept {
             const float cosine = std::cos(angleRadians);
             const float sine = std::sin(angleRadians);
