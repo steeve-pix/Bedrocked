@@ -105,20 +105,21 @@ namespace bedrocked {
         const Matrix4 scaling =
                 Matrix4::scale(0.5F, 0.5F, 1.0F);
 
-        const Matrix4 model =
-                Matrix4::translation(0.0F, 0.0F, -3.0F) *
-                Matrix4::rotationY(pi / 4.0F) *
-                Matrix4::rotationX(pi / 6.0F);
-
         Mesh cube{vertices, std::size(vertices), indices, std::size(indices)};
 
-        const Matrix4 nearModel = Matrix4::translation(-0.15f, 0.0f, -2.0f) * Matrix4::rotationZ(pi / 4.0f) *
-                                  Matrix4::scale(0.5f, 0.5f, 0.5f);
-        const Matrix4 farModel = Matrix4::translation(0.15f, 0.0f, -3.0f) * Matrix4::rotationZ(pi / 4.0f) *
-                                 Matrix4::scale(0.7f, 0.7f, 0.7f);
+        float rotationAngle{};
 
         while (!m_window.shouldClose()) {
             const double deltaTime = m_timer.tick();
+            constexpr float rotationSpeed = 1.0F; // radians per second
+
+            rotationAngle +=
+                    rotationSpeed * static_cast<float>(deltaTime);
+
+            const Matrix4 model =
+                    Matrix4::translation(0.0F, 0.0F, -3.0F) *
+                    Matrix4::rotationY(rotationAngle) *
+                    Matrix4::rotationX(rotationAngle * 0.5F);
 
             m_window.pollEvents();
 
