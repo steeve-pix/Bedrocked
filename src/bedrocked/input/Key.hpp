@@ -9,4 +9,4 @@ namespace bedrocked {
         Space,
         LeftShift
     };
-}
+} // namespace bedrocked

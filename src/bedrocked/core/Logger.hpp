@@ -24,4 +24,4 @@ namespace bedrocked {
             log(LogLevel::Error, message);
         }
     };
-}
+} // namespace bedrocked
