@@ -3,7 +3,6 @@
 #include <array>
 #include <cstddef>
 
-
 namespace bedrocked {
     class Chunk final {
     public:
@@ -17,10 +16,10 @@ namespace bedrocked {
         void setBlock(std::size_t x, std::size_t y, std::size_t z,BlockType type) noexcept;
 
     private:
-        std::array<BlockType, BlockCount> m_blocks{};
-
         [[nodiscard]] static constexpr std::size_t index(std::size_t x, std::size_t y, std::size_t z) noexcept {
             return x + Width * (z + Depth * y);
         }
+
+        std::array<BlockType, BlockCount> m_blocks{};
     };
 }
