@@ -7,15 +7,16 @@
 #include "bedrocked/rendering/Mesh.hpp"
 #include "bedrocked/rendering/Vertex.hpp"
 #include "bedrocked/rendering/Texture2D.hpp"
+#include "bedrocked/assets/Image.hpp"
+#include "bedrocked/rendering/TextureAtlasLayout.hpp"
 
 #include <iterator>
 #include <string_view>
 #include <iostream>
 #include <cstdint>
 #include <array>
-#include <glad/glad.h>
 
-#include "bedrocked/assets/Image.hpp"
+#include <glad/glad.h>
 
 namespace bedrocked {
     namespace {
@@ -74,43 +75,56 @@ namespace bedrocked {
             }
         )";
 
+        constexpr TextureAtlasLayout kAtlasLayout{2, 2};
+
+        constexpr TextureRegion kDirtRegion =
+                kAtlasLayout.region(0, 0);
+
+        constexpr TextureRegion kWoodRegion =
+                kAtlasLayout.region(1, 0);
+
+        constexpr TextureRegion kGrassRegion =
+                kAtlasLayout.region(0, 1);
+
+        constexpr TextureRegion kStoneRegion =
+                kAtlasLayout.region(1, 1);
+
         // CUBE GEOMETRY
         constexpr Vertex kCubeVertices[]{
-            // Front
-            {{-0.5F, -0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {0.0F, 0.0F}},
-            {{+0.5F, -0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {1.0F, 0.0F}},
-            {{+0.5F, +0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {1.0F, 1.0F}},
-            {{-0.5F, +0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {0.0F, 1.0F}},
-
+            // Front: z = +0.5
+            {{-0.5F, -0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {kStoneRegion.minimumU, kStoneRegion.minimumV}},
+            {{+0.5F, -0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {kStoneRegion.maximumU, kStoneRegion.minimumV}},
+            {{+0.5F, +0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {kStoneRegion.maximumU, kStoneRegion.maximumV}},
+            {{-0.5F, +0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {kStoneRegion.minimumU, kStoneRegion.maximumV}},
             // Back
-            {{+0.5F, -0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {0.0F, 0.0F}},
-            {{-0.5F, -0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {1.0F, 0.0F}},
-            {{-0.5F, +0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {1.0F, 1.0F}},
-            {{+0.5F, +0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {0.0F, 1.0F}},
+            {{+0.5F, -0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {kStoneRegion.minimumU, kStoneRegion.minimumV}},
+            {{-0.5F, -0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {kStoneRegion.maximumU, kStoneRegion.minimumV}},
+            {{-0.5F, +0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {kStoneRegion.maximumU, kStoneRegion.maximumV}},
+            {{+0.5F, +0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {kStoneRegion.minimumU, kStoneRegion.maximumV}},
 
             // Left
-            {{-0.5F, -0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {0.0F, 0.0F}},
-            {{-0.5F, -0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {1.0F, 0.0F}},
-            {{-0.5F, +0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {1.0F, 1.0F}},
-            {{-0.5F, +0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {0.0F, 1.0F}},
+            {{-0.5F, -0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {kStoneRegion.minimumU, kStoneRegion.minimumV}},
+            {{-0.5F, -0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {kStoneRegion.maximumU, kStoneRegion.minimumV}},
+            {{-0.5F, +0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {kStoneRegion.maximumU, kStoneRegion.maximumV}},
+            {{-0.5F, +0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {kStoneRegion.minimumU, kStoneRegion.maximumV}},
 
             // Right
-            {{+0.5F, -0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {0.0F, 0.0F}},
-            {{+0.5F, -0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {1.0F, 0.0F}},
-            {{+0.5F, +0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {1.0F, 1.0F}},
-            {{+0.5F, +0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {0.0F, 1.0F}},
+            {{+0.5F, -0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {kStoneRegion.minimumU, kStoneRegion.minimumV}},
+            {{+0.5F, -0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {kStoneRegion.maximumU, kStoneRegion.minimumV}},
+            {{+0.5F, +0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {kStoneRegion.maximumU, kStoneRegion.maximumV}},
+            {{+0.5F, +0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {kStoneRegion.minimumU, kStoneRegion.maximumV}},
 
             // Top
-            {{-0.5F, +0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {0.0F, 0.0F}},
-            {{+0.5F, +0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {1.0F, 0.0F}},
-            {{+0.5F, +0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {1.0F, 1.0F}},
-            {{-0.5F, +0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {0.0F, 1.0F}},
+            {{-0.5F, +0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {kGrassRegion.minimumU, kGrassRegion.minimumV}},
+            {{+0.5F, +0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {kGrassRegion.maximumU, kGrassRegion.minimumV}},
+            {{+0.5F, +0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {kGrassRegion.maximumU, kGrassRegion.maximumV}},
+            {{-0.5F, +0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {kGrassRegion.minimumU, kGrassRegion.maximumV}},
 
             // Bottom
-            {{-0.5F, -0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {0.0F, 0.0F}},
-            {{+0.5F, -0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {1.0F, 0.0F}},
-            {{+0.5F, -0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {1.0F, 1.0F}},
-            {{-0.5F, -0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {0.0F, 1.0F}}
+            {{-0.5F, -0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {kDirtRegion.minimumU, kDirtRegion.minimumV}},
+            {{+0.5F, -0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {kDirtRegion.maximumU, kDirtRegion.minimumV}},
+            {{+0.5F, -0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {kDirtRegion.maximumU, kDirtRegion.maximumV}},
+            {{-0.5F, -0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {kDirtRegion.minimumU, kDirtRegion.maximumV}}
         };
 
         constexpr std::uint32_t kCubeIndices[]{
@@ -135,7 +149,7 @@ namespace bedrocked {
         Mesh cube{kCubeVertices, std::size(kCubeVertices), kCubeIndices, std::size(kCubeIndices)};
 
         // RGBA PIXELS
-        Image blockImage{"assets/textures/block.png"};
+        Image blockImage{"assets/textures/block_atlas.png"};
 
         Texture2D blockTexture{
             blockImage.width(),
