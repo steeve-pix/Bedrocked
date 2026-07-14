@@ -21,4 +21,4 @@ namespace bedrocked {
     private:
         uint32_t m_id{0};
     };
-}
+} // namespace bedrocked

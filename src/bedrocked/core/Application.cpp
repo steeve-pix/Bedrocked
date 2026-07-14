@@ -3,25 +3,33 @@
 #include "bedrocked/math/Matrix4.hpp"
 #include "bedrocked/core/Logger.hpp"
 #include "bedrocked/rendering/ShaderProgram.hpp"
+#include "bedrocked/rendering/Camera.hpp"
+#include "bedrocked/rendering/Mesh.hpp"
+#include "bedrocked/rendering/Vertex.hpp"
 
 #include <iterator>
 #include <string_view>
 #include <iostream>
 #include <cstdint>
 
-#include "bedrocked/rendering/Camera.hpp"
-
 
 namespace bedrocked {
-    Application::Application() : m_window(WindowConfig{1280, 720, "Bedrocked Engine"}) {
-    }
+    namespace {
+        // RENDERING CONFIG
+        constexpr float kPi = 3.14159265358979323846F;
+        constexpr float kFieldOfView = 60.0f * kPi / 180.0f;
 
-    int Application::run() {
-        Logger::info("Bedrocked starting...");
-        double accumulator{};
-        int frameCount{};
+        constexpr float kNearClipPlane = 0.1f;
+        constexpr float kFarClipPlane = 100.0f;
 
-        constexpr std::string_view vertexSource = R"(
+        constexpr float kRotationSpeed = 1.0f;
+        constexpr float kCameraSpeed = 2.0f;
+        constexpr float kMouseSensitivity = 0.002f;
+
+        constexpr double kStatisticsInterval = 10.0;
+
+        // SHADERS
+        constexpr std::string_view kVertexShaderSource = R"(
             #version 330 core
 
             layout(location = 0) in vec3 position;
@@ -40,7 +48,7 @@ namespace bedrocked {
             }
         )";
 
-        constexpr std::string_view fragmentSource = R"(
+        constexpr std::string_view kFragmentShaderSource = R"(
             #version 330 core
 
             in vec3 vertexColor;
@@ -53,12 +61,8 @@ namespace bedrocked {
             }
         )";
 
-        ShaderProgram shader(vertexSource, fragmentSource);
-        shader.use();
-
-        m_renderer.setClearColor(0.1F, 0.2F, 0.3F, 1.0F);
-
-        constexpr Vertex vertices[]{
+        // CUBE GEOMETRY
+        constexpr Vertex kCubeVertices[]{
             // Front: z = 0.5
             {{-0.5F, -0.5F, 0.5F}, {1.0F, 0.0F, 0.0F}},
             {{0.5F, -0.5F, 0.5F}, {0.0F, 1.0F, 0.0F}},
@@ -72,7 +76,7 @@ namespace bedrocked {
             {{-0.5F, 0.5F, -0.5F}, {0.3F, 0.3F, 0.3F}}
         };
 
-        constexpr std::uint32_t indices[]{
+        constexpr std::uint32_t kCubeIndices[]{
             // Front
             0, 1, 2,
             0, 2, 3,
@@ -97,89 +101,155 @@ namespace bedrocked {
             4, 5, 1,
             4, 1, 0
         };
-        constexpr float pi = 3.14159265358979323846F;
+    } // namespace
 
-        Mesh cube{vertices, std::size(vertices), indices, std::size(indices)};
+    Application::Application()
+        : m_window(WindowConfig{1280, 720, "Bedrocked Engine"}) {
+    }
 
-        float rotationAngle{};
+    int Application::run() {
+        Logger::info("Bedrocked starting...");
+
+        ShaderProgram shader(kVertexShaderSource, kFragmentShaderSource);
+
+        Mesh cube{kCubeVertices, std::size(kCubeVertices), kCubeIndices, std::size(kCubeIndices)};
 
         Camera camera;
 
+        // Move the camera away from the world origin so the cube is visible
         camera.move(0.0F, 0.0F, 1.0F);
+
+        m_renderer.setClearColor(0.1F, 0.2F, 0.3F, 1.0F);
+
+        m_window.setCursorCaptured(true);
+
+        CursorPosition previousCursor =
+                m_window.cursorPosition();
+
+        float rotationAngle{};
+
+        double statisticsElapsedTime = 0.0;
+        int loopCount = 0;
 
         while (!m_window.shouldClose()) {
             const double deltaTime = m_timer.tick();
-            constexpr float rotationSpeed = 1.0F; // radians per second
+            const float deltaTimeSeconds = static_cast<float>(deltaTime);
 
+            m_window.pollEvents();
+
+            // MOUSE INPUT
+            const CursorPosition currentCursor =
+                    m_window.cursorPosition();
+
+            const double mouseDeltaX =
+                    currentCursor.x - previousCursor.x;
+
+            const double mouseDeltaY =
+                    previousCursor.y - currentCursor.y;
+
+            previousCursor = currentCursor;
+
+            camera.rotate(
+                static_cast<float>(mouseDeltaX) * kMouseSensitivity,
+                static_cast<float>(mouseDeltaY) * kMouseSensitivity
+            );
+
+            // KEYBOARD INPUT
+            // Close with if Escape key is pressed
+            if (m_window.isKeyDown(Key::Escape)) {
+                m_window.requestClose();
+            }
+
+            const float movementDistance =
+                    kCameraSpeed * deltaTimeSeconds;
+
+            if (m_window.isKeyDown(Key::W)) {
+                camera.moveForward(movementDistance);
+            }
+
+            if (m_window.isKeyDown(Key::S)) {
+                camera.moveForward(-movementDistance);
+            }
+            if (m_window.isKeyDown(Key::A)) {
+                camera.moveRight(-movementDistance);
+            }
+
+            if (m_window.isKeyDown(Key::D)) {
+                camera.moveRight(movementDistance);
+            }
+
+            if (m_window.isKeyDown(Key::Space)) {
+                camera.move(0.0f, movementDistance, 0.0f);
+            }
+
+            if (m_window.isKeyDown(Key::LeftShift)) {
+                camera.move(0.0f, -movementDistance, 0.0f);
+            }
+
+            // FRAMEBUFFER AND PROJECTION
+            const FrameBufferSize framebufferSize =
+                    m_window.framebufferSize();
+
+            if (framebufferSize.width <= 0 ||
+                framebufferSize.height <= 0) {
+                continue;
+            }
+
+            m_renderer.setViewPort(framebufferSize.width,
+                                   framebufferSize.height);
+
+            const float aspectRatio =
+                    static_cast<float>(framebufferSize.width) / static_cast<float>(framebufferSize.height);
+
+            const Matrix4 projection = Matrix4::perspective(kFieldOfView, aspectRatio, kNearClipPlane, kFarClipPlane);
+
+
+            // SCENE TRANSFORMS
             rotationAngle +=
-                    rotationSpeed * static_cast<float>(deltaTime);
+                    kRotationSpeed * static_cast<float>(deltaTimeSeconds);
 
             const Matrix4 model =
                     Matrix4::translation(0.0F, 0.0F, -3.0F) *
                     Matrix4::rotationY(rotationAngle) *
                     Matrix4::rotationX(rotationAngle * 0.5F);
 
-            m_window.pollEvents();
-
-            constexpr float cameraSpeed = 2.0f;
-            const float movement = cameraSpeed * static_cast<float>(deltaTime);
-
-            const FrameBufferSize framebufferSize = m_window.framebufferSize();
-            if (framebufferSize.width <= 0 || framebufferSize.height <= 0) {
-                continue;
-            }
-            m_renderer.setViewPort(framebufferSize.width, framebufferSize.height);
-
-            const float aspectRatio =
-                    static_cast<float>(framebufferSize.width) / static_cast<float>(framebufferSize.height);
-
-            constexpr float fieldOfView = 60.0f * pi / 180.0f;
-            const Matrix4 projection = Matrix4::perspective(fieldOfView, aspectRatio, 0.1F, 100.0F);;
-
-
-            // Close with if Escape key is pressed
-            if (m_window.isKeyDown(Key::Escape)) {
-                m_window.requestClose();
-            }
-
-            if (m_window.isKeyDown(Key::W)) {
-                camera.move(0.0f, 0.0f, -movement);
-            }
-
-            if (m_window.isKeyDown(Key::S)) {
-                camera.move(0.0f, 0.0f, movement);
-            }
-            if (m_window.isKeyDown(Key::A)) {
-                camera.move(-movement, 0.0f, 0.0f);
-            }
-
-            if (m_window.isKeyDown(Key::D)) {
-                camera.move(movement, 0.0f, 0.0f);
-            }
-
-            m_renderer.clear();
-
             const Matrix4 view = camera.viewMatrix();
+
+            // RENDERING
+            m_renderer.clear();
 
             shader.use();
             shader.setMat4("projection", projection.data());
             shader.setMat4("view", view.data());
             shader.setMat4("model", model.data());
-            m_renderer.draw(cube);
 
+            m_renderer.draw(cube);
             m_window.swapBuffers();
 
-            accumulator += deltaTime;
-            ++frameCount;
-            if (accumulator >= 10.0) {
-                std::cout << "Loop rate: " << frameCount
-                        << " iterations/s | Avg loop time: "
-                        << (accumulator / frameCount) * 1'000.0
+            // PERFORMANCE STATS
+            statisticsElapsedTime += deltaTime;
+            ++loopCount;
+
+            if (statisticsElapsedTime >= kStatisticsInterval) {
+                const double loopsPerSecond =
+                        static_cast<double>(loopCount) /
+                        statisticsElapsedTime;
+
+                const double averageLoopTimeMilliseconds =
+                        statisticsElapsedTime /
+                        static_cast<double>(loopCount) *
+                        1'000.0;
+                std::cout
+                        << "Loop rate: " << loopsPerSecond
+                        << " iterations/s | Average loop time: "
+                        << averageLoopTimeMilliseconds
                         << " ms\n";
-                accumulator -= 10.0;
-                frameCount = 0;
+
+                statisticsElapsedTime -= kStatisticsInterval;
+                loopCount = 0;
             }
         }
+
         return 0;
     }
-}
+} // namespace bedrocked

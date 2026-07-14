@@ -6,7 +6,7 @@
 namespace bedrocked {
     class IndexBuffer final {
     public:
-        IndexBuffer(const uint32_t* indices, std::size_t count);
+        IndexBuffer(const uint32_t *indices, std::size_t count);
 
         ~IndexBuffer();
 
@@ -22,4 +22,4 @@ namespace bedrocked {
         uint32_t m_id{0};
         std::size_t m_count{};
     };
-}
+} // namespace bedrocked

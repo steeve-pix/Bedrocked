@@ -18,4 +18,4 @@ namespace bedrocked {
     void VertexBuffer::bind() const noexcept {
         glBindBuffer(GL_ARRAY_BUFFER, m_id);
     }
-}
+} // namespace bedrocked

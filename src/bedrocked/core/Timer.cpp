@@ -11,4 +11,4 @@ namespace bedrocked {
 
         return elapsedTime.count();
     }
-}
+} // namespace bedrocked

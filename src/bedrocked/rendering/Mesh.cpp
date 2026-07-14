@@ -28,4 +28,4 @@ namespace bedrocked {
     int Mesh::indexCount() const noexcept {
         return m_indexBuffer->count();
     }
-}
+} // namespace bedrocked

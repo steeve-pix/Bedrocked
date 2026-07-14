@@ -15,4 +15,4 @@ namespace bedrocked {
         Timer m_timer;
         Renderer m_renderer;
     };
-}
+} // namespace bedrocked

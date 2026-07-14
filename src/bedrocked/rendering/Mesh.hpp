@@ -2,10 +2,9 @@
 #include "bedrocked/rendering/VertexArray.hpp"
 #include "bedrocked/rendering/VertexBuffer.hpp"
 #include "IndexBuffer.hpp"
+#include "bedrocked/rendering/Vertex.hpp"
 
 #include <optional>
-
-#include "bedrocked/rendering/Vertex.hpp"
 
 namespace bedrocked {
     class Mesh final {
@@ -25,4 +24,4 @@ namespace bedrocked {
         VertexBuffer m_vertexBuffer;
         std::optional<IndexBuffer> m_indexBuffer;
     };
-}
+} // namespace bedrocked

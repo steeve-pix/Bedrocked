@@ -12,7 +12,7 @@ namespace {
         }
         return "UNKNOWN";
     }
-}
+} // namespace
 
 namespace bedrocked {
     void Logger::log(LogLevel level, std::string_view message) {
@@ -20,4 +20,4 @@ namespace bedrocked {
                 level == LogLevel::Info ? std::cout : std::cerr;
         output << "[" << levelName(level) << "] " << message << '\n';
     }
-}
+} // namespace bedrocked

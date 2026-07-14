@@ -24,4 +24,4 @@ namespace bedrocked {
     std::size_t IndexBuffer::count() const noexcept {
         return m_count;
     }
-}
+} // namespace bedrocked

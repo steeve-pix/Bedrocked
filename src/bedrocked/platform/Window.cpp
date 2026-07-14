@@ -93,4 +93,15 @@ namespace bedrocked {
 
         return size;
     }
-}
+
+    CursorPosition Window::cursorPosition() const noexcept {
+        CursorPosition position{};
+
+        glfwGetCursorPos(m_handle, &position.x, &position.y);
+        return position;
+    }
+
+    void Window::setCursorCaptured(bool captured) noexcept {
+        glfwSetInputMode(m_handle,GLFW_CURSOR, captured ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+    }
+} // namespace bedrocked
