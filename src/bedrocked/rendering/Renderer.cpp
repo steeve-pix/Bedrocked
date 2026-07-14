@@ -21,4 +21,8 @@ namespace bedrocked {
             nullptr
         );
     }
+
+    void Renderer::setViewPort(int width, int height) noexcept {
+        glViewport(0, 0, width, height);
+    }
 }

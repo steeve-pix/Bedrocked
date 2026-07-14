@@ -12,6 +12,11 @@ namespace bedrocked {
         std::string title = "Bedrocked";
     };
 
+    struct FrameBufferSize {
+        int width;
+        int height;
+    };
+
     class Window final {
     public:
         explicit Window(const WindowConfig &config);
@@ -32,6 +37,8 @@ namespace bedrocked {
         void requestClose() noexcept;
 
         void swapBuffers() noexcept;
+
+        [[nodiscard]] FrameBufferSize framebufferSize() const noexcept;
 
     private:
         GLFWwindow *m_handle{nullptr};
