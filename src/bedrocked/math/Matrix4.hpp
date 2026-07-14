@@ -82,6 +82,24 @@ namespace bedrocked {
             };
         }
 
+        [[nodiscard]] static Matrix4 perspective(
+            float verticalFieldOfViewRadians,
+            float aspectRatio,
+            float nearPlane,
+            float farPlane) noexcept {
+            const float focalLength =
+                    1.0F / std::tan(verticalFieldOfViewRadians / 2.0F);
+
+            return Matrix4{
+                {
+                    focalLength / aspectRatio, 0.0F, 0.0F, 0.0F,
+                    0.0F, focalLength, 0.0F, 0.0F,
+                    0.0F, 0.0F, (farPlane + nearPlane) / (nearPlane - farPlane), -1.0F,
+                    0.0F, 0.0F, (2.0F * farPlane * nearPlane) / (nearPlane - farPlane), 0.0F
+                }
+            };
+        }
+
     private:
         explicit constexpr Matrix4(std::array<float, 16> values) noexcept
             : m_values(values) {

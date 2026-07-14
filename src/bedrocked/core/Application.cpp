@@ -81,7 +81,7 @@ namespace bedrocked {
         constexpr float pi = 3.14159265358979323846F;
 
         const Matrix4 translation =
-                Matrix4::translation(0.25F, 0.0F, 0.0F);
+                Matrix4::translation(0.0F, 0.0F, -2.0F);
 
         const Matrix4 rotation =
                 Matrix4::rotationZ(pi / 4.0F);
@@ -108,7 +108,8 @@ namespace bedrocked {
             const float aspectRatio =
                     static_cast<float>(framebufferSize.width) / static_cast<float>(framebufferSize.height);
 
-            const Matrix4 projection = Matrix4::aspectCorrection(aspectRatio);
+            constexpr float fieldOfView = 60.0f * pi / 180.0f;
+            const Matrix4 projection = Matrix4::perspective(fieldOfView, aspectRatio, 0.1F, 100.0F);;
 
 
             // Close with if Escape key is pressed
