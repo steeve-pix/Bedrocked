@@ -257,7 +257,7 @@ namespace {
 } // namespace
 
 namespace bedrocked {
-    ChunkMeshData buildChunkMeshData(const Chunk &chunk) {
+    ChunkMeshData buildChunkMeshData(const Chunk &chunk, const ChunkNeighbors &neighbors) {
         ChunkMeshData meshData;
 
         constexpr std::array faces{
@@ -279,7 +279,7 @@ namespace bedrocked {
                     }
 
                     for (const BlockFace face: faces) {
-                        if (!isFaceVisible(chunk, x, y, z, face)) {
+                        if (!isFaceVisible(chunk, neighbors, x, y, z, face)) {
                             continue;
                         }
 

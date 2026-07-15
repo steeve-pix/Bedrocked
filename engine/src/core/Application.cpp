@@ -1,29 +1,26 @@
 #include "bedrocked/core/Application.hpp"
+
+#include "bedrocked/assets/Image.hpp"
+#include "bedrocked/core/Logger.hpp"
 #include "bedrocked/input/Key.hpp"
 #include "bedrocked/math/Matrix4.hpp"
-#include "bedrocked/core/Logger.hpp"
-#include "bedrocked/rendering/opengl/ShaderProgram.hpp"
 #include "bedrocked/rendering/Camera.hpp"
 #include "bedrocked/rendering/Mesh.hpp"
+#include "bedrocked/rendering/opengl/ShaderProgram.hpp"
 #include "bedrocked/rendering/opengl/Texture2D.hpp"
-#include "bedrocked/rendering/Vertex.hpp"
-#include "bedrocked/assets/Image.hpp"
-#include "bedrocked/rendering/texture/TextureAtlasLayout.hpp"
-#include "bedrocked/rendering/texture/TextureRegion.hpp"
 #include "bedrocked/world/chunk/Chunk.hpp"
 #include "bedrocked/world/chunk/ChunkMesher.hpp"
+#include "bedrocked/world/chunk/ChunkNeighbors.hpp"
+#include "bedrocked/world/chunk/ChunkPosition.hpp"
+#include "bedrocked/world/chunk/ChunkTransforms.hpp"
 
 #include <cassert>
-#include <iterator>
-#include <string_view>
 #include <iostream>
-#include <cstdint>
-#include <array>
+#include <string_view>
 
 #include <glad/glad.h>
 
-#include "bedrocked/world/chunk/ChunkPosition.hpp"
-#include "bedrocked/world/chunk/ChunkTransforms.hpp"
+#include "bedrocked/world/chunk/ChunkManager.hpp"
 
 namespace bedrocked {
     namespace {
@@ -34,7 +31,6 @@ namespace bedrocked {
         constexpr float kNearClipPlane = 0.1f;
         constexpr float kFarClipPlane = 100.0f;
 
-        constexpr float kRotationSpeed = 1.0f;
         constexpr float kCameraSpeed = 2.0f;
         constexpr float kMouseSensitivity = 0.002f;
 
@@ -81,81 +77,20 @@ namespace bedrocked {
                     texture(blockTexture, vertexTextureCoordinates);
             }
         )";
-
-        constexpr TextureAtlasLayout kAtlasLayout{2, 2};
-
-        constexpr TextureRegion kDirtRegion =
-                kAtlasLayout.region(0, 0);
-
-        constexpr TextureRegion kWoodRegion =
-                kAtlasLayout.region(1, 0);
-
-        constexpr TextureRegion kGrassRegion =
-                kAtlasLayout.region(0, 1);
-
-        constexpr TextureRegion kStoneRegion =
-                kAtlasLayout.region(1, 1);
-
-        // CUBE GEOMETRY
-        constexpr Vertex kCubeVertices[]{
-            // Front: z = +0.5
-            {{-0.5F, -0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {kStoneRegion.minimumU, kStoneRegion.minimumV}},
-            {{+0.5F, -0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {kStoneRegion.maximumU, kStoneRegion.minimumV}},
-            {{+0.5F, +0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {kStoneRegion.maximumU, kStoneRegion.maximumV}},
-            {{-0.5F, +0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {kStoneRegion.minimumU, kStoneRegion.maximumV}},
-            // Back
-            {{+0.5F, -0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {kStoneRegion.minimumU, kStoneRegion.minimumV}},
-            {{-0.5F, -0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {kStoneRegion.maximumU, kStoneRegion.minimumV}},
-            {{-0.5F, +0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {kStoneRegion.maximumU, kStoneRegion.maximumV}},
-            {{+0.5F, +0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {kStoneRegion.minimumU, kStoneRegion.maximumV}},
-
-            // Left
-            {{-0.5F, -0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {kStoneRegion.minimumU, kStoneRegion.minimumV}},
-            {{-0.5F, -0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {kStoneRegion.maximumU, kStoneRegion.minimumV}},
-            {{-0.5F, +0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {kStoneRegion.maximumU, kStoneRegion.maximumV}},
-            {{-0.5F, +0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {kStoneRegion.minimumU, kStoneRegion.maximumV}},
-
-            // Right
-            {{+0.5F, -0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {kStoneRegion.minimumU, kStoneRegion.minimumV}},
-            {{+0.5F, -0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {kStoneRegion.maximumU, kStoneRegion.minimumV}},
-            {{+0.5F, +0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {kStoneRegion.maximumU, kStoneRegion.maximumV}},
-            {{+0.5F, +0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {kStoneRegion.minimumU, kStoneRegion.maximumV}},
-
-            // Top
-            {{-0.5F, +0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {kGrassRegion.minimumU, kGrassRegion.minimumV}},
-            {{+0.5F, +0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {kGrassRegion.maximumU, kGrassRegion.minimumV}},
-            {{+0.5F, +0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {kGrassRegion.maximumU, kGrassRegion.maximumV}},
-            {{-0.5F, +0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {kGrassRegion.minimumU, kGrassRegion.maximumV}},
-
-            // Bottom
-            {{-0.5F, -0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {kDirtRegion.minimumU, kDirtRegion.minimumV}},
-            {{+0.5F, -0.5F, -0.5F}, {1.0F, 1.0F, 1.0F}, {kDirtRegion.maximumU, kDirtRegion.minimumV}},
-            {{+0.5F, -0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {kDirtRegion.maximumU, kDirtRegion.maximumV}},
-            {{-0.5F, -0.5F, +0.5F}, {1.0F, 1.0F, 1.0F}, {kDirtRegion.minimumU, kDirtRegion.maximumV}}
-        };
-
-        constexpr std::uint32_t kCubeIndices[]{
-            0, 1, 2, 0, 2, 3,
-            4, 5, 6, 4, 6, 7,
-            8, 9, 10, 8, 10, 11,
-            12, 13, 14, 12, 14, 15,
-            16, 17, 18, 16, 18, 19,
-            20, 21, 22, 20, 22, 23
-        };
     } // namespace
 
     Application::Application()
-        : m_window(WindowConfig{1280, 720, "Bedrocked Engine"}) {
+        : m_window{WindowConfig{1280, 720, "Bedrocked Engine"}} {
     }
 
     int Application::run() {
         Logger::info("Bedrocked starting...");
 
-        ShaderProgram shader(kVertexShaderSource, kFragmentShaderSource);
+        ShaderProgram shader{
+            kVertexShaderSource,
+            kFragmentShaderSource
+        };
 
-        Mesh cube{kCubeVertices, std::size(kCubeVertices), kCubeIndices, std::size(kCubeIndices)};
-
-        // RGBA PIXELS
         Image blockImage{"assets/textures/block_atlas.png"};
 
         Texture2D blockTexture{
@@ -164,10 +99,82 @@ namespace bedrocked {
             blockImage.pixels()
         };
 
-        Camera camera;
+        // Two solid blocks touching across a chunk boundary.
+        Chunk leftChunk;
+        Chunk rightChunk;
 
-        // Move the camera away from the world origin so the cube is visible
-        camera.move(0.0F, 0.0F, 1.0F);
+        leftChunk.setBlock(
+            static_cast<int>(Chunk::Width) - 1,
+            0,
+            0,
+            BlockType::Stone
+        );
+
+        rightChunk.setBlock(
+            0,
+            0,
+            0,
+            BlockType::Stone
+        );
+
+        const ChunkNeighbors leftNeighbors{
+            .right = &rightChunk
+        };
+
+        const ChunkNeighbors rightNeighbors{
+            .left = &leftChunk
+        };
+
+        const ChunkMeshData leftMeshData =
+                buildChunkMeshData(leftChunk, leftNeighbors);
+
+        const ChunkMeshData rightMeshData =
+                buildChunkMeshData(rightChunk, rightNeighbors);
+
+        // Each boundary block has five visible faces because the shared face is removed.
+        assert(leftMeshData.vertices.size() == 20);
+        assert(leftMeshData.indices.size() == 30);
+        assert(rightMeshData.vertices.size() == 20);
+        assert(rightMeshData.indices.size() == 30);
+
+        // Upload the generated CPU mesh data to GPU resources.
+        Mesh leftMesh{
+            leftMeshData.vertices.data(),
+            leftMeshData.vertices.size(),
+            leftMeshData.indices.data(),
+            leftMeshData.indices.size()
+        };
+
+        Mesh rightMesh{
+            rightMeshData.vertices.data(),
+            rightMeshData.vertices.size(),
+            rightMeshData.indices.data(),
+            rightMeshData.indices.size()
+        };
+
+        constexpr ChunkPosition leftPosition{
+            .x = 0,
+            .y = 0,
+            .z = 0
+        };
+
+        constexpr ChunkPosition rightPosition{
+            .x = 1,
+            .y = 0,
+            .z = 0
+        };
+
+        // The blocks sit around world X = 15/16. Shift the scene so the pair is centered.
+        const Matrix4 sceneOffset =
+                Matrix4::translation(-16.0F, -0.5F, -6.0F);
+
+        const Matrix4 leftModel =
+                sceneOffset * chunkModelMatrix(leftPosition);
+
+        const Matrix4 rightModel =
+                sceneOffset * chunkModelMatrix(rightPosition);
+
+        Camera camera;
 
         m_renderer.setClearColor(0.1F, 0.2F, 0.3F, 1.0F);
 
@@ -176,57 +183,16 @@ namespace bedrocked {
         CursorPosition previousCursor =
                 m_window.cursorPosition();
 
-        float rotationAngle{};
+        shader.use();
+        shader.setInt("blockTexture", 0);
 
-        double statisticsElapsedTime = 0.0;
-        int loopCount = 0;
-
-        Chunk firstChunk;
-        firstChunk.setBlock(0, 0, 0, BlockType::Grass);
-        firstChunk.setBlock(1, 0, 0, BlockType::Stone);
-
-        Chunk secondChunk;
-        secondChunk.setBlock(0, 0, 0, BlockType::Wood);
-        secondChunk.setBlock(1, 0, 0, BlockType::Dirt);
-
-
-        const ChunkMeshData firstMeshData =
-                buildChunkMeshData(firstChunk);
-
-        const ChunkMeshData secondMeshData =
-                buildChunkMeshData(secondChunk);
-
-        Mesh firstMesh{
-            firstMeshData.vertices.data(), firstMeshData.vertices.size(), firstMeshData.indices.data(),
-            firstMeshData.indices.size()
-        };
-
-        Mesh secondMesh{
-            secondMeshData.vertices.data(), secondMeshData.vertices.size(), secondMeshData.indices.data(),
-            secondMeshData.indices.size()
-        };
-
-        constexpr ChunkPosition firstPosition{
-            .x = 0,
-            .y = 0,
-            .z = 0
-        };
-
-        constexpr ChunkPosition secondPosition{
-            .x = 0,
-            .y = 0,
-            .z = -1
-        };
-
-        const Matrix4 firstModel =
-    chunkModelMatrix(firstPosition);
-
-        const Matrix4 secondModel =
-            chunkModelMatrix(secondPosition);
+        double statisticsElapsedTime{};
+        int loopCount{};
 
         while (!m_window.shouldClose()) {
             const double deltaTime = m_timer.tick();
-            const auto deltaTimeSeconds = static_cast<float>(deltaTime);
+            const float deltaTimeSeconds =
+                    static_cast<float>(deltaTime);
 
             m_window.pollEvents();
 
@@ -263,6 +229,7 @@ namespace bedrocked {
             if (m_window.isKeyDown(Key::S)) {
                 camera.moveForward(-movementDistance);
             }
+
             if (m_window.isKeyDown(Key::A)) {
                 camera.moveRight(-movementDistance);
             }
@@ -296,14 +263,6 @@ namespace bedrocked {
 
             const Matrix4 projection = Matrix4::perspective(kFieldOfView, aspectRatio, kNearClipPlane, kFarClipPlane);
 
-
-            // SCENE TRANSFORMS
-            rotationAngle +=
-                    kRotationSpeed * static_cast<float>(deltaTimeSeconds);
-
-            const Matrix4 model =
-                    Matrix4::translation(-1.0F, -1.0F, -5.0F);
-
             const Matrix4 view = camera.viewMatrix();
 
             // RENDERING
@@ -316,11 +275,11 @@ namespace bedrocked {
             shader.setMat4("projection", projection.data());
             shader.setMat4("view", view.data());
 
-            shader.setMat4("model", firstModel.data());
-            m_renderer.draw(firstMesh);
+            shader.setMat4("model", leftModel.data());
+            m_renderer.draw(leftMesh);
 
-            shader.setMat4("model", secondModel.data());
-            m_renderer.draw(secondMesh);
+            shader.setMat4("model", rightModel.data());
+            m_renderer.draw(rightMesh);
 
             m_window.swapBuffers();
 
@@ -343,7 +302,7 @@ namespace bedrocked {
                         << averageLoopTimeMilliseconds
                         << " ms\n";
 
-                statisticsElapsedTime -= kStatisticsInterval;
+                statisticsElapsedTime = 0.0;
                 loopCount = 0;
             }
         }
