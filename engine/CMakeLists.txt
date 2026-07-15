@@ -18,6 +18,7 @@ add_library(bedrocked_engine STATIC
         src/rendering/opengl/VertexBuffer.cpp
 
         src/world/chunk/Chunk.cpp
+        src/world/chunk/ChunkMesher.cpp
 )
 
 #

@@ -10,7 +10,10 @@
 #include "bedrocked/assets/Image.hpp"
 #include "bedrocked/rendering/texture/TextureAtlasLayout.hpp"
 #include "bedrocked/rendering/texture/TextureRegion.hpp"
+#include "bedrocked/world/chunk/Chunk.hpp"
+#include "bedrocked/world/chunk/ChunkMesher.hpp"
 
+#include <cassert>
 #include <iterator>
 #include <string_view>
 #include <iostream>
@@ -18,7 +21,6 @@
 #include <array>
 
 #include <glad/glad.h>
-
 
 namespace bedrocked {
     namespace {
@@ -176,9 +178,22 @@ namespace bedrocked {
         double statisticsElapsedTime = 0.0;
         int loopCount = 0;
 
+        Chunk chunk;
+
+        chunk.setBlock(0, 0, 0, BlockType::Grass);
+        chunk.setBlock(1, 0, 0, BlockType::Stone);
+        chunk.setBlock(0, 1, 0, BlockType::Wood);
+        chunk.setBlock(1, 1, 0, BlockType::Dirt);
+
+        const ChunkMeshData chunkMeshData = buildChunkMeshData(chunk);
+        Mesh chunkMesh{
+            chunkMeshData.vertices.data(), chunkMeshData.vertices.size(), chunkMeshData.indices.data(),
+            chunkMeshData.indices.size()
+        };
+
         while (!m_window.shouldClose()) {
             const double deltaTime = m_timer.tick();
-            const float deltaTimeSeconds = static_cast<float>(deltaTime);
+            const auto deltaTimeSeconds = static_cast<float>(deltaTime);
 
             m_window.pollEvents();
 
@@ -254,9 +269,7 @@ namespace bedrocked {
                     kRotationSpeed * static_cast<float>(deltaTimeSeconds);
 
             const Matrix4 model =
-                    Matrix4::translation(0.0F, 0.0F, -3.0F) *
-                    Matrix4::rotationY(rotationAngle) *
-                    Matrix4::rotationX(rotationAngle * 0.5F);
+                Matrix4::translation(-1.0F, -1.0F, -5.0F);
 
             const Matrix4 view = camera.viewMatrix();
 
@@ -272,7 +285,7 @@ namespace bedrocked {
             shader.setMat4("view", view.data());
             shader.setMat4("model", model.data());
 
-            m_renderer.draw(cube);
+            m_renderer.draw(chunkMesh);
             m_window.swapBuffers();
 
             // PERFORMANCE STATS
