@@ -14,6 +14,12 @@ namespace {
             case bedrocked::Key::D: return GLFW_KEY_D;
             case bedrocked::Key::Space: return GLFW_KEY_SPACE;
             case bedrocked::Key::LeftShift: return GLFW_KEY_LEFT_SHIFT;
+
+            case bedrocked::Key::Digit1: return GLFW_KEY_1;
+            case bedrocked::Key::Digit2: return GLFW_KEY_2;
+            case bedrocked::Key::Digit3: return GLFW_KEY_3;
+            case bedrocked::Key::Digit4: return GLFW_KEY_4;
+            case bedrocked::Key::Digit5: return GLFW_KEY_5;
         }
         return GLFW_KEY_UNKNOWN;
     }

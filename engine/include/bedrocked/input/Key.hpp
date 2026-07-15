@@ -7,6 +7,11 @@ namespace bedrocked {
         S,
         D,
         Space,
-        LeftShift
+        LeftShift,
+        Digit1,
+        Digit2,
+        Digit3,
+        Digit4,
+        Digit5
     };
 } // namespace bedrocked
