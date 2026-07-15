@@ -9,11 +9,14 @@ namespace bedrocked {
 
         void generateTestWorld();
 
+        void setBlockAtWorld(int worldX, int worldY, int worldZ, BlockType type) noexcept;
+
         [[nodiscard]] ChunkManager &chunks() noexcept;
 
         [[nodiscard]] const ChunkManager &chunks() const noexcept;
 
     private:
+        std::uint32_t m_seed;
         ChunkManager m_chunkManager;
         TerrainGenerator m_terrainGenerator;
     };

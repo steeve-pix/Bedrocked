@@ -17,7 +17,7 @@ namespace bedrocked {
                         position.z * static_cast<int>(Chunk::Depth) + localZ;
 
                 const int surfaceHeight =
-                        terrainHeight(m_noise, worldX, worldZ);
+                        surfaceHeightAt(worldX, worldZ);
 
                 for (int localY{}; localY <= surfaceHeight; ++localY) {
                     BlockType blockType = BlockType::Stone;
@@ -32,5 +32,9 @@ namespace bedrocked {
                 }
             }
         }
+    }
+
+    int TerrainGenerator::surfaceHeightAt(int worldX, int worldZ) const noexcept {
+        return terrainHeight(m_noise, worldX, worldZ);
     }
 } // namespace bedrocked
