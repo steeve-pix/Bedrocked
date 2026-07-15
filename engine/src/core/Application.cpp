@@ -22,6 +22,9 @@
 
 #include <glad/glad.h>
 
+#include "bedrocked/world/chunk/ChunkPosition.hpp"
+#include "bedrocked/world/chunk/ChunkTransforms.hpp"
+
 namespace bedrocked {
     namespace {
         // RENDERING CONFIG
@@ -178,18 +181,48 @@ namespace bedrocked {
         double statisticsElapsedTime = 0.0;
         int loopCount = 0;
 
-        Chunk chunk;
+        Chunk firstChunk;
+        firstChunk.setBlock(0, 0, 0, BlockType::Grass);
+        firstChunk.setBlock(1, 0, 0, BlockType::Stone);
 
-        chunk.setBlock(0, 0, 0, BlockType::Grass);
-        chunk.setBlock(1, 0, 0, BlockType::Stone);
-        chunk.setBlock(0, 1, 0, BlockType::Wood);
-        chunk.setBlock(1, 1, 0, BlockType::Dirt);
+        Chunk secondChunk;
+        secondChunk.setBlock(0, 0, 0, BlockType::Wood);
+        secondChunk.setBlock(1, 0, 0, BlockType::Dirt);
 
-        const ChunkMeshData chunkMeshData = buildChunkMeshData(chunk);
-        Mesh chunkMesh{
-            chunkMeshData.vertices.data(), chunkMeshData.vertices.size(), chunkMeshData.indices.data(),
-            chunkMeshData.indices.size()
+
+        const ChunkMeshData firstMeshData =
+                buildChunkMeshData(firstChunk);
+
+        const ChunkMeshData secondMeshData =
+                buildChunkMeshData(secondChunk);
+
+        Mesh firstMesh{
+            firstMeshData.vertices.data(), firstMeshData.vertices.size(), firstMeshData.indices.data(),
+            firstMeshData.indices.size()
         };
+
+        Mesh secondMesh{
+            secondMeshData.vertices.data(), secondMeshData.vertices.size(), secondMeshData.indices.data(),
+            secondMeshData.indices.size()
+        };
+
+        constexpr ChunkPosition firstPosition{
+            .x = 0,
+            .y = 0,
+            .z = 0
+        };
+
+        constexpr ChunkPosition secondPosition{
+            .x = 0,
+            .y = 0,
+            .z = -1
+        };
+
+        const Matrix4 firstModel =
+    chunkModelMatrix(firstPosition);
+
+        const Matrix4 secondModel =
+            chunkModelMatrix(secondPosition);
 
         while (!m_window.shouldClose()) {
             const double deltaTime = m_timer.tick();
@@ -269,7 +302,7 @@ namespace bedrocked {
                     kRotationSpeed * static_cast<float>(deltaTimeSeconds);
 
             const Matrix4 model =
-                Matrix4::translation(-1.0F, -1.0F, -5.0F);
+                    Matrix4::translation(-1.0F, -1.0F, -5.0F);
 
             const Matrix4 view = camera.viewMatrix();
 
@@ -280,12 +313,15 @@ namespace bedrocked {
             blockTexture.bind();
 
             shader.use();
-            shader.setInt("blockTexture", 0);
             shader.setMat4("projection", projection.data());
             shader.setMat4("view", view.data());
-            shader.setMat4("model", model.data());
 
-            m_renderer.draw(chunkMesh);
+            shader.setMat4("model", firstModel.data());
+            m_renderer.draw(firstMesh);
+
+            shader.setMat4("model", secondModel.data());
+            m_renderer.draw(secondMesh);
+
             m_window.swapBuffers();
 
             // PERFORMANCE STATS
