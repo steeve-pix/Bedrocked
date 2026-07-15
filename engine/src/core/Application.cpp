@@ -22,6 +22,12 @@
 
 #include <glad/glad.h>
 
+#include "bedrocked/world/block/BlockPosition.hpp"
+#include "bedrocked/world/block/BlockRaycast.hpp"
+#include "bedrocked/world/chunk/ChunkCoordinates.hpp"
+
+#include <array>
+
 namespace bedrocked {
     namespace {
         // RENDERING CONFIG
@@ -79,6 +85,7 @@ namespace bedrocked {
         )";
 
         struct RenderChunk {
+            ChunkPosition position;
             Matrix4 model;
             std::unique_ptr<Mesh> mesh;
         };
@@ -149,6 +156,7 @@ namespace bedrocked {
             );
 
             renderChunks.push_back({
+                .position = position,
                 .model = chunkModelMatrix(position),
                 .mesh = std::move(mesh)
             });
@@ -181,12 +189,63 @@ namespace bedrocked {
         double statisticsElapsedTime{};
         int loopCount{};
 
+        std::optional<BlockPosition> previousTarget;
+        bool previousLeftMouseDown{};
+
+        const auto rebuildChunkMesh = [&chunkManager, &renderChunks](ChunkPosition position) {
+            Chunk *chunk =
+                    chunkManager.chunkAt(position);
+
+            if (chunk == nullptr) {
+                return;
+            }
+
+            const ChunkNeighbors neighbors =
+                    chunkManager.neighborsOf(position);
+
+            const ChunkMeshData meshData =
+                    buildChunkMeshData(*chunk, neighbors);
+
+            for (RenderChunk &renderChunk: renderChunks) {
+                if (renderChunk.position != position) {
+                    continue;
+                }
+
+                if (meshData.empty()) {
+                    renderChunk.mesh.reset();
+                    return;
+                }
+
+                renderChunk.mesh =
+                        std::make_unique<Mesh>(
+                            meshData.vertices.data(),
+                            meshData.vertices.size(),
+                            meshData.indices.data(),
+                            meshData.indices.size()
+                        );
+
+                return;
+            }
+        };
+
         while (!m_window.shouldClose()) {
             const double deltaTime = m_timer.tick();
             const float deltaTimeSeconds =
                     static_cast<float>(deltaTime);
 
             m_window.pollEvents();
+
+            const bool leftMouseDown =
+                    m_window.isMouseButtonDown(MouseButton::Left);
+
+            const bool leftMousePressed =
+                    leftMouseDown && !previousLeftMouseDown;
+
+            previousLeftMouseDown = leftMouseDown;
+
+            if (leftMousePressed) {
+                std::cout << "Left mouse clicked\n";
+            }
 
             /*
              * Mouse input controls only camera orientation.
@@ -260,6 +319,77 @@ namespace bedrocked {
             const Vector3 &playerPosition =
                     player.position();
 
+            const Vector3 rayOrigin{
+                .x = playerPosition.x,
+                .y = playerPosition.y + kPlayerEyeHeight,
+                .z = playerPosition.z
+            };
+
+            constexpr float interactionReach = 5.0F;
+
+            const auto raycastHit = raycastBlocks(
+                world, rayOrigin,
+                camera.forwardDirection(),
+                interactionReach
+            );
+
+            if (raycastHit.has_value()) {
+                const BlockPosition &targetedBlock =
+                        raycastHit->block;
+
+                if (!previousTarget.has_value() ||
+                    previousTarget.value() != targetedBlock) {
+                    std::cout
+                            << "Targeted block: "
+                            << targetedBlock.x << ", "
+                            << targetedBlock.y << ", "
+                            << targetedBlock.z
+                            << " | distance: "
+                            << raycastHit->distance
+                            << '\n';
+
+                    previousTarget = targetedBlock;
+                }
+            } else if (previousTarget.has_value()) {
+                std::cout << "No block targeted\n";
+                previousTarget.reset();
+            }
+
+            if (leftMousePressed && raycastHit.has_value()) {
+                const BlockPosition destroyedBlock =
+                        raycastHit->block;
+
+                world.setBlockAtWorld(
+                    destroyedBlock.x,
+                    destroyedBlock.y,
+                    destroyedBlock.z,
+                    BlockType::Air
+                );
+
+                const ChunkPosition affectedChunk =
+                        chunkPositionForBlock(destroyedBlock);
+
+                constexpr std::array neighborOffsets{
+                    ChunkPosition{0, 0, 0},
+                    ChunkPosition{1, 0, 0},
+                    ChunkPosition{-1, 0, 0},
+                    ChunkPosition{0, 1, 0},
+                    ChunkPosition{0, -1, 0},
+                    ChunkPosition{0, 0, 1},
+                    ChunkPosition{0, 0, -1}
+                };
+
+                for (const ChunkPosition offset: neighborOffsets) {
+                    rebuildChunkMesh({
+                        .x = affectedChunk.x + offset.x,
+                        .y = affectedChunk.y + offset.y,
+                        .z = affectedChunk.z + offset.z
+                    });
+                }
+
+                rebuildChunkMesh(affectedChunk);
+            }
+
             camera.setPosition(
                 playerPosition.x,
                 playerPosition.y + kPlayerEyeHeight,
@@ -297,6 +427,9 @@ namespace bedrocked {
             shader.setMat4("view", view.data());
 
             for (const RenderChunk &renderChunk: renderChunks) {
+                if (renderChunk.mesh == nullptr) {
+                    continue;
+                }
                 shader.setMat4("model", renderChunk.model.data());
 
                 m_renderer.draw(*renderChunk.mesh);

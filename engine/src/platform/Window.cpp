@@ -17,6 +17,18 @@ namespace {
         }
         return GLFW_KEY_UNKNOWN;
     }
+
+    [[nodiscard]] int toGlfwMouseButton(bedrocked::MouseButton button) noexcept {
+        switch (button) {
+            case bedrocked::MouseButton::Left:
+                return GLFW_MOUSE_BUTTON_LEFT;
+
+            case bedrocked::MouseButton::Right:
+                return GLFW_MOUSE_BUTTON_RIGHT;
+        }
+
+        return GLFW_MOUSE_BUTTON_LEFT;
+    }
 } // Anonymouse helper
 
 namespace bedrocked {
@@ -103,5 +115,9 @@ namespace bedrocked {
 
     void Window::setCursorCaptured(bool captured) noexcept {
         glfwSetInputMode(m_handle,GLFW_CURSOR, captured ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+    }
+
+    bool Window::isMouseButtonDown(MouseButton button) const noexcept {
+        return glfwGetMouseButton(m_handle, toGlfwMouseButton(button)) == GLFW_PRESS;
     }
 } // namespace bedrocked

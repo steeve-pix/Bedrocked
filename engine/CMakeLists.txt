@@ -26,6 +26,7 @@ add_library(bedrocked_engine STATIC
         src/world/generation/TerrainGenerator.cpp
         src/world/generation/ValueNoise3D.cpp
         src/gameplay/Player.cpp
+        src/world/block/BlockRaycast.cpp
 )
 
 #

@@ -49,4 +49,15 @@ namespace bedrocked {
     float Camera::yaw() const noexcept {
         return m_yaw;
     }
+
+    Vector3 Camera::forwardDirection() const noexcept {
+        const float horizontalLength =
+                std::cos(m_pitch);
+
+        return Vector3{
+            .x = -horizontalLength * std::sin(m_yaw),
+            .y = std::sin(m_pitch),
+            .z = -horizontalLength * std::cos(m_yaw)
+        };
+    }
 } // namespace bedrocked
