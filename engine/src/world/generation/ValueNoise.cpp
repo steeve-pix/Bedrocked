@@ -3,8 +3,8 @@
 #include <cmath>
 
 namespace {
-    [[nodiscard]] constexpr float smoothStep(float value) noexcept {
-        return value * value * (3.0f - 2.0f * value);
+    [[nodiscard]] constexpr float fade(float value) noexcept {
+        return value * value * value * (value * (value * 6.0F - 15.0F) + 10.0F);
     }
 
     [[nodiscard]] constexpr float lerp(float start, float end, float amount) noexcept {
@@ -50,8 +50,8 @@ namespace bedrocked {
         const float localZ =
                 z - static_cast<float>(minimumZ);
 
-        const float smoothX = smoothStep(localX);
-        const float smoothZ = smoothStep(localZ);
+        const float smoothX = fade(localX);
+        const float smoothZ = fade(localZ);
 
         const float bottomLeft =
                 valueAt(minimumX, minimumZ);

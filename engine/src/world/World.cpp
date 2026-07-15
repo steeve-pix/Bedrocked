@@ -1,9 +1,11 @@
 #include "bedrocked/world/World.hpp"
-
 #include "bedrocked/world/generation/TerrainHeight.hpp"
+
 
 namespace bedrocked {
     void World::generateTestWorld() {
+        const FractalNoise terrainNoise{1234U};
+
         for (int chunkZ = -1; chunkZ <= 1; ++chunkZ) {
             for (int chunkX = -1; chunkX <= 1; ++chunkX) {
                 Chunk &chunk = m_chunkManager.createChunk({.x = chunkX, .y = 0, .z = chunkZ});
@@ -17,18 +19,18 @@ namespace bedrocked {
                                 chunkZ * static_cast<int>(Chunk::Depth) + localZ;
 
                         const int surfaceHeight =
-                                terrainHeight(worldX, worldZ);
+                                terrainHeight(terrainNoise, worldX, worldZ);
 
                         for (int y{}; y <= surfaceHeight; ++y) {
-                            BlockType blockType = BlockType::Stone;
+                            BlockType type = BlockType::Stone;
 
                             if (y == surfaceHeight) {
-                                blockType = BlockType::Grass;
+                                type = BlockType::Grass;
                             } else if (y >= surfaceHeight - 3) {
-                                blockType = BlockType::Dirt;
+                                type = BlockType::Dirt;
                             }
 
-                            chunk.setBlock(localX, y, localZ, blockType);
+                            chunk.setBlock(localX, y, localZ, type);
                         }
                     }
                 }
