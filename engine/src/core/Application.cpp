@@ -36,7 +36,7 @@ namespace bedrocked {
         constexpr float kNearClipPlane = 0.1f;
         constexpr float kFarClipPlane = 100.0f;
 
-        constexpr float kCameraSpeed = 2.0f;
+        constexpr float kCameraSpeed = 20.0f;
         constexpr float kMouseSensitivity = 0.002f;
 
         constexpr double kStatisticsInterval = 10.0;
@@ -129,7 +129,7 @@ namespace bedrocked {
             blockImage.pixels()
         };
 
-        World world;
+        World world{1234U};
         world.generateTestWorld();
 
         ChunkManager &chunkManager = world.chunks();
