@@ -13,15 +13,16 @@
 #include "bedrocked/world/chunk/ChunkNeighbors.hpp"
 #include "bedrocked/world/chunk/ChunkPosition.hpp"
 #include "bedrocked/world/chunk/ChunkTransforms.hpp"
+#include "bedrocked/world/World.hpp"
+#include "bedrocked/world/chunk/ChunkManager.hpp"
 
 #include <cassert>
 #include <iostream>
 #include <string_view>
+#include <memory>
+#include <vector>
 
 #include <glad/glad.h>
-
-#include "bedrocked/world/World.hpp"
-#include "bedrocked/world/chunk/ChunkManager.hpp"
 
 namespace bedrocked {
     namespace {
@@ -100,65 +101,61 @@ namespace bedrocked {
             blockImage.pixels()
         };
 
-        constexpr ChunkPosition leftPosition{
-            .x = 0,
-            .y = 0,
-            .z = 0
-        };
-
-        constexpr ChunkPosition rightPosition{
-            .x = 1,
-            .y = 0,
-            .z = 0
-        };
-
-        // The blocks sit around world X = 15/16. Shift the scene so the pair is centered.
-        const Matrix4 sceneOffset =
-                Matrix4::translation(-16.0F, -0.5F, -6.0F);
-
         World world;
         world.generateTestWorld();
 
-        ChunkManager &chunkManager =
-                world.chunks();
+        ChunkManager &chunkManager = world.chunks();
 
-        constexpr ChunkPosition worldChunkPosition{
-            .x = 0,
-            .y = 0,
-            .z = 0
+        const std::vector<ChunkPosition> positions =
+                chunkManager.positions();
+
+        assert(positions.size() == 9);
+
+        struct RenderChunk {
+            Matrix4 model;
+            std::unique_ptr<Mesh> mesh;
         };
 
-        Chunk *worldChunk =
-                chunkManager.chunkAt(worldChunkPosition);
+        std::vector<RenderChunk> renderChunks;
+        renderChunks.reserve(positions.size());
 
-        assert(worldChunk != nullptr);
-
-        const ChunkNeighbors worldNeighbors =
-                chunkManager.neighborsOf(worldChunkPosition);
-
-        const ChunkMeshData worldMeshData =
-                buildChunkMeshData(
-                    *worldChunk,
-                    worldNeighbors
-                );
-
-        assert(worldMeshData.vertices.size() == 2'304);
-        assert(worldMeshData.indices.size() == 3'456);
-
-        Mesh worldMesh{
-            worldMeshData.vertices.data(),
-            worldMeshData.vertices.size(),
-            worldMeshData.indices.data(),
-            worldMeshData.indices.size()
-        };
-
-        const Matrix4 worldModel =
+        const Matrix4 sceneOffset =
                 Matrix4::translation(
                     -8.0F,
                     -2.0F,
-                    -20.0F
-                ) *
-                chunkModelMatrix(worldChunkPosition);
+                    -40.0F
+                );
+
+        for (const ChunkPosition position: positions) {
+            Chunk *chunk = chunkManager.chunkAt(position);
+
+            assert(chunk != nullptr);
+
+            const ChunkNeighbors neighbors =
+                    chunkManager.neighborsOf(position);
+
+            const ChunkMeshData meshData =
+                    buildChunkMeshData(*chunk, neighbors);
+
+            if (meshData.empty()) {
+                continue;
+            }
+
+            auto mesh = std::make_unique<Mesh>(
+                meshData.vertices.data(),
+                meshData.vertices.size(),
+                meshData.indices.data(),
+                meshData.indices.size()
+            );
+
+            renderChunks.push_back({
+                .model =
+                sceneOffset *
+                chunkModelMatrix(position),
+
+                .mesh = std::move(mesh)
+            });
+        }
 
         Camera camera;
 
@@ -261,8 +258,11 @@ namespace bedrocked {
             shader.setMat4("projection", projection.data());
             shader.setMat4("view", view.data());
 
-            shader.setMat4("model", worldModel.data());
-            m_renderer.draw(worldMesh);
+            for (const RenderChunk &renderChunk: renderChunks) {
+                shader.setMat4("model", renderChunk.model.data());
+
+                m_renderer.draw(*renderChunk.mesh);
+            }
 
             m_window.swapBuffers();
 
