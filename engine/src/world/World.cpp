@@ -2,11 +2,15 @@
 
 namespace bedrocked {
     void World::generateTestWorld() {
-        Chunk &chunk = m_chunkManager.createChunk({0, 0, 0});
+        for (int chunkZ = -1; chunkZ <= 1; ++chunkZ) {
+            for (int chunkX = -1; chunkX <= 1; ++chunkX) {
+                Chunk &chunk = m_chunkManager.createChunk({.x = chunkX, .y = 0, .z = chunkZ});
 
-        for (int z{}; z < static_cast<int>(Chunk::Depth); ++z) {
-            for (int x{}; x < static_cast<int>(Chunk::Width); ++x) {
-                chunk.setBlock(x, 0, z, BlockType::Grass);
+                for (int z{}; z < static_cast<int>(Chunk::Depth); ++z) {
+                    for (int x{}; x < static_cast<int>(Chunk::Width); ++x) {
+                        chunk.setBlock(x, 0, z, BlockType::Grass);
+                    }
+                }
             }
         }
     }

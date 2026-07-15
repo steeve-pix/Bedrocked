@@ -15,8 +15,10 @@ namespace bedrocked {
 
         [[nodiscard]] const Chunk *chunkAt(ChunkPosition position) const noexcept;
 
-        [[nodiscard]] ChunkNeighbors neighborsOf(
-    ChunkPosition position) const noexcept;
+        [[nodiscard]] ChunkNeighbors neighborsOf(ChunkPosition position) const noexcept;
+
+        [[nodiscard]] std::vector<ChunkPosition> positions() const;
+
     private:
         struct Entry {
             ChunkPosition position;

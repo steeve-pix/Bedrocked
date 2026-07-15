@@ -1,5 +1,6 @@
 add_executable(bedrocked
         main.cpp
+        ../engine/src/world/chunk/ChunkManager.cpp
 )
 
 target_compile_features(bedrocked

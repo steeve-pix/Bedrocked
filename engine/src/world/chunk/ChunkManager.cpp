@@ -47,4 +47,15 @@ namespace bedrocked {
             .bottom = chunkAt({position.x, position.y - 1, position.z})
         };
     }
-}
+
+    std::vector<ChunkPosition> ChunkManager::positions() const {
+        std::vector<ChunkPosition> result;
+        result.reserve(m_chunks.size());
+
+        for (const Entry &entry: m_chunks) {
+            result.push_back(entry.position);
+        }
+
+        return result;
+    }
+} // namespace bedrocked
