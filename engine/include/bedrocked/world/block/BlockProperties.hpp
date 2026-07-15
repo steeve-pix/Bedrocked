@@ -1,5 +1,4 @@
 #pragma once
-#include "bedrocked/world/BlockType.hpp"
 
 namespace bedrocked {
     [[nodiscard]] constexpr bool isAir(BlockType type) noexcept {
