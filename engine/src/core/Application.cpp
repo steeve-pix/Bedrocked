@@ -84,10 +84,75 @@ namespace bedrocked {
             }
         )";
 
+        constexpr std::string_view kOutlineVertexShaderSource = R"(
+            #version 330 core
+
+            layout(location = 0) in vec3 position;
+            layout(location = 1) in vec3 color;
+
+            uniform mat4 model;
+            uniform mat4 view;
+            uniform mat4 projection;
+
+            out vec3 vertexColor;
+
+            void main()
+            {
+                gl_Position =
+                    projection * view * model * vec4(position, 1.0);
+
+                vertexColor = color;
+            }
+        )";
+
+        constexpr std::string_view kOutlineFragmentShaderSource = R"(
+            #version 330 core
+
+            in vec3 vertexColor;
+
+            out vec4 fragmentColor;
+
+            void main()
+            {
+                fragmentColor = vec4(vertexColor, 1.0);
+            }
+        )";
+
         struct RenderChunk {
             ChunkPosition position;
             Matrix4 model;
             std::unique_ptr<Mesh> mesh;
+        };
+
+        constexpr Vertex kOutlineVertices[]{
+            {{-0.5F, -0.5F, 0.5F}, {1.0F, 1.0F, 0.0F}, {0.0F, 0.0F}}, // 0
+            {{0.5F, -0.5F, 0.5F}, {1.0F, 1.0F, 0.0F}, {0.0F, 0.0F}}, // 1
+            {{0.5F, 0.5F, 0.5F}, {1.0F, 1.0F, 0.0F}, {0.0F, 0.0F}}, // 2
+            {{-0.5F, 0.5F, 0.5F}, {1.0F, 1.0F, 0.0F}, {0.0F, 0.0F}}, // 3
+
+            {{-0.5F, -0.5F, -0.5F}, {1.0F, 1.0F, 0.0F}, {0.0F, 0.0F}}, // 4
+            {{0.5F, -0.5F, -0.5F}, {1.0F, 1.0F, 0.0F}, {0.0F, 0.0F}}, // 5
+            {{0.5F, 0.5F, -0.5F}, {1.0F, 1.0F, 0.0F}, {0.0F, 0.0F}}, // 6
+            {{-0.5F, 0.5F, -0.5F}, {1.0F, 1.0F, 0.0F}, {0.0F, 0.0F}} // 7
+        };
+        constexpr std::uint32_t kOutlineIndices[]{
+            // Front
+            0, 1,
+            1, 2,
+            2, 3,
+            3, 0,
+
+            // Back
+            4, 5,
+            5, 6,
+            6, 7,
+            7, 4,
+
+            // Connections
+            0, 4,
+            1, 5,
+            2, 6,
+            3, 7
         };
     } // namespace
 
@@ -251,6 +316,15 @@ namespace bedrocked {
             }
         };
 
+        Mesh selectionOutline{
+            kOutlineVertices, std::size(kOutlineVertices), kOutlineIndices, std::size(kOutlineIndices)
+        };
+
+        ShaderProgram outlineShader{
+            kOutlineVertexShaderSource,
+            kOutlineFragmentShaderSource
+        };
+
         while (!m_window.shouldClose()) {
             const double deltaTime = m_timer.tick();
             const float deltaTimeSeconds =
@@ -271,10 +345,10 @@ namespace bedrocked {
             }
 
             const bool rightMouseDown =
-    m_window.isMouseButtonDown(MouseButton::Right);
+                    m_window.isMouseButtonDown(MouseButton::Right);
 
             const bool rightMousePressed =
-                rightMouseDown && !previousRightMouseDown;
+                    rightMouseDown && !previousRightMouseDown;
 
             previousRightMouseDown = rightMouseDown;
 
@@ -402,14 +476,14 @@ namespace bedrocked {
 
             if (rightMousePressed && raycastHit.has_value()) {
                 const BlockPosition placementPosition =
-                    raycastHit->adjacentBlock;
+                        raycastHit->adjacentBlock;
 
                 const BlockType existingBlock =
-                    world.blockAtWorld(
-                        placementPosition.x,
-                        placementPosition.y,
-                        placementPosition.z
-                    );
+                        world.blockAtWorld(
+                            placementPosition.x,
+                            placementPosition.y,
+                            placementPosition.z
+                        );
 
                 if (existingBlock == BlockType::Air &&
                     !player.intersectsBlock(placementPosition)) {
@@ -421,7 +495,7 @@ namespace bedrocked {
                     );
 
                     rebuildAroundBlock(placementPosition);
-                    }
+                }
             }
 
             camera.setPosition(
@@ -467,6 +541,35 @@ namespace bedrocked {
                 shader.setMat4("model", renderChunk.model.data());
 
                 m_renderer.draw(*renderChunk.mesh);
+            }
+
+            if (raycastHit.has_value()) {
+                const BlockPosition &target =
+                        raycastHit->block;
+
+                constexpr float outlineScale = 1.002F;
+
+                const Matrix4 outlineModel =
+                        Matrix4::translation(
+                            static_cast<float>(target.x) + 0.5F,
+                            static_cast<float>(target.y) + 0.5F,
+                            static_cast<float>(target.z) + 0.5F
+                        ) *
+                        Matrix4::scale(
+                            outlineScale,
+                            outlineScale,
+                            outlineScale
+                        );
+
+                outlineShader.use();
+
+                outlineShader.setMat4("projection", projection.data());
+
+                outlineShader.setMat4("view", view.data());
+
+                outlineShader.setMat4("model", outlineModel.data());
+
+                m_renderer.drawLines(selectionOutline);
             }
 
             m_window.swapBuffers();
