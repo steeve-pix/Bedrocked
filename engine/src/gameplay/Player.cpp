@@ -4,6 +4,41 @@
 #include <cmath>
 #include <array>
 
+namespace {
+    constexpr float kPlayerHalfWidth = 0.3F;
+    constexpr float kPlayerHeight = 1.8F;
+    constexpr float kCollisionEpsilon = 0.001F;
+
+    [[nodiscard]] bool collidesWithWorld(const bedrocked::World &world,
+                                         const bedrocked::Vector3 &feetPosition) noexcept {
+        const int minimumX = static_cast<int>(std::floor(feetPosition.x - kPlayerHalfWidth + kCollisionEpsilon));
+
+        const int maximumX = static_cast<int>(std::floor(feetPosition.x + kPlayerHalfWidth - kCollisionEpsilon));
+
+        const int minimumY = static_cast<int>(std::floor(feetPosition.y + kCollisionEpsilon));
+
+        const int maximumY = static_cast<int>(std::floor(feetPosition.y + kPlayerHeight - kCollisionEpsilon));
+
+        const int minimumZ = static_cast<int>(std::floor(feetPosition.z - kPlayerHalfWidth + kCollisionEpsilon));
+
+        const int maximumZ = static_cast<int>(
+            std::floor(feetPosition.z + kPlayerHalfWidth - kCollisionEpsilon));
+
+        for (int y = minimumY; y <= maximumY; ++y) {
+            for (int z = minimumZ; z <= maximumZ; ++z) {
+                for (int x = minimumX; x <= maximumX; ++x) {
+                    if (bedrocked::isSolid(
+                        world.blockAtWorld(x, y, z))) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+}
+
 namespace bedrocked {
     Player::Player(Vector3 position) noexcept
         : m_position{position} {
@@ -15,8 +50,27 @@ namespace bedrocked {
         constexpr float collisionEpsilon = 0.001F;
 
         // Horizontal movement
-        m_position.x += m_velocity.x * deltaTime;
-        m_position.z += m_velocity.z * deltaTime;
+        Vector3 proposedPosition = m_position;
+
+        proposedPosition.x +=
+                m_velocity.x * deltaTime;
+
+        if (!collidesWithWorld(world, proposedPosition)) {
+            m_position.x = proposedPosition.x;
+        } else {
+            m_velocity.x = 0.0F;
+        }
+
+        proposedPosition = m_position;
+
+        proposedPosition.z +=
+                m_velocity.z * deltaTime;
+
+        if (!collidesWithWorld(world, proposedPosition)) {
+            m_position.z = proposedPosition.z;
+        } else {
+            m_velocity.z = 0.0F;
+        }
 
         if (!m_grounded) {
             m_velocity.y += gravity * deltaTime;
@@ -82,7 +136,7 @@ namespace bedrocked {
 
     void Player::move(float forward, float right, float yaw, float speed) noexcept {
         const float inputLength =
-       std::sqrt(forward * forward + right * right);
+                std::sqrt(forward * forward + right * right);
 
         if (inputLength > 1.0F) {
             forward /= inputLength;
