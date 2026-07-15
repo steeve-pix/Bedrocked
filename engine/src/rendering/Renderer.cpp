@@ -33,4 +33,15 @@ namespace bedrocked {
     void Renderer::setViewPort(int width, int height) noexcept {
         glViewport(0, 0, width, height);
     }
+
+    void Renderer::drawLines(const Mesh &mesh) noexcept {
+        mesh.bind();
+
+        glDrawElements(
+            GL_LINES,
+            static_cast<GLsizei>(mesh.indexCount()),
+            GL_UNSIGNED_INT,
+            nullptr
+        );
+    }
 } // namespace bedrocked
