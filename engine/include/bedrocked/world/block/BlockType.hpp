@@ -7,6 +7,7 @@ namespace bedrocked {
         Grass,
         Dirt,
         Stone,
-        Wood
+        Wood,
+        Leaves
     };
 } // namespace bedrocked

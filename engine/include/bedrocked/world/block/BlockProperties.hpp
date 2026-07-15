@@ -13,6 +13,7 @@ namespace bedrocked {
             case BlockType::Dirt:
             case BlockType::Stone:
             case BlockType::Wood:
+            case BlockType::Leaves:
                 return true;
         }
         return false;

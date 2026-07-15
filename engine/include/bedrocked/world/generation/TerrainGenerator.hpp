@@ -13,6 +13,8 @@ namespace bedrocked {
 
         void generate(Chunk &chunk, ChunkPosition position) const;
 
+        [[nodiscard]] int surfaceHeightAt(int worldX,int worldZ) const noexcept;
+
     private:
         FractalNoise m_noise;
     };
