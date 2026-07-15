@@ -79,6 +79,26 @@ namespace bedrocked {
         const float proposedY =
                 m_position.y + m_velocity.y * deltaTime;
 
+        if (m_velocity.y > 0.0F) {
+            proposedPosition.y = proposedY;
+
+            if (collidesWithWorld(world, proposedPosition)) {
+                const float headY =
+                        proposedY + kPlayerHeight;
+
+                const int ceilingBlockY =
+                        static_cast<int>(std::floor(headY));
+
+                m_position.y =
+                        static_cast<float>(ceilingBlockY) -
+                        kPlayerHeight -
+                        kCollisionEpsilon;
+
+                m_velocity.y = 0.0F;
+                return;
+            }
+        }
+
         if (m_velocity.y <= 0.0F) {
             const int blockY = static_cast<int>(
                 std::floor(proposedY - collisionEpsilon)
