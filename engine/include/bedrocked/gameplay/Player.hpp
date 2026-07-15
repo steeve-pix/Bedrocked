@@ -14,6 +14,8 @@ namespace bedrocked {
 
         [[nodiscard]] const Vector3 &velocity() const noexcept;
 
+        void move(float forward, float right, float yaw, float speed) noexcept;
+
     private:
         Vector3 m_position;
         Vector3 m_velocity;

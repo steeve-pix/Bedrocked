@@ -45,4 +45,8 @@ namespace bedrocked {
         m_y = y;
         m_z = z;
     }
+
+    float Camera::yaw() const noexcept {
+        return m_yaw;
+    }
 } // namespace bedrocked

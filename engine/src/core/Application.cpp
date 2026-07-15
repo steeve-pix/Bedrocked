@@ -214,13 +214,31 @@ namespace bedrocked {
                 m_window.requestClose();
             }
 
+            float forwardInput{};
+            float rightInput{};
+
+            if (m_window.isKeyDown(Key::W)) {
+                forwardInput += 1.0f;
+            }
+            if (m_window.isKeyDown(Key::S)) {
+                forwardInput -= 1.0F;
+            }
+
+            if (m_window.isKeyDown(Key::D)) {
+                rightInput += 1.0F;
+            }
+
+            if (m_window.isKeyDown(Key::A)) {
+                rightInput -= 1.0F;
+            }
+
+            constexpr float playerSpeed = 4.0F;
+            player.move(forwardInput, rightInput, camera.yaw(), playerSpeed);
+
             /*
              * Gravity and vertical ground collision.
              */
-            player.update(
-                deltaTimeSeconds,
-                world
-            );
+            player.update(deltaTimeSeconds, world);
 
             /*
              * Attach the camera to the player’s eye position.

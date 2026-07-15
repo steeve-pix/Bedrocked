@@ -16,6 +16,8 @@ namespace bedrocked {
 
         void setPosition(float x, float y, float z) noexcept;
 
+        [[nodiscard]] float yaw() const noexcept;
+
     private:
         float m_x{};
         float m_y{};
