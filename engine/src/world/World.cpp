@@ -45,62 +45,29 @@ namespace bedrocked {
         const int minimumWorldX =
                 minimumChunkX * static_cast<int>(Chunk::Width);
 
-        const int maximumWorldX =
-                (maximumChunkX + 1) *
-                static_cast<int>(Chunk::Width) - 1;
+        constexpr int minimumWorldZ =
+                -1 * static_cast<int>(Chunk::Depth);
 
-        const int minimumWorldZ =
-                minimumChunkZ * static_cast<int>(Chunk::Depth);
+        constexpr int maximumWorldZ =
+                2 * static_cast<int>(Chunk::Depth) - 1;
 
-        const int maximumWorldZ =
-                (maximumChunkZ + 1) *
-                static_cast<int>(Chunk::Depth) - 1;
+        constexpr int maximumWorldX =
+                2 * static_cast<int>(Chunk::Width) - 1;
 
-        constexpr int treeMargin = 2;
-        constexpr int trunkHeight = 4;
-        constexpr int canopyHeight = 2;
-
-
-        for (int worldZ = minimumWorldZ + treeMargin;
-             worldZ <= maximumWorldZ - treeMargin;
-             ++worldZ) {
-            for (int worldX = minimumWorldX + treeMargin;
-                 worldX <= maximumWorldX - treeMargin;
+        for (int worldZ = minimumWorldZ; worldZ <= maximumWorldZ; ++worldZ) {
+            for (int worldX = 0;
+                 worldX <= maximumWorldX;
                  ++worldX) {
-                if (!shouldPlaceTree(worldX, worldZ, m_seed)) {
-                    continue;
+                for (int worldY = 0;
+                     worldY < static_cast<int>(Chunk::Height);
+                     ++worldY) {
+                    setBlockAtWorld(
+                        worldX,
+                        worldY,
+                        worldZ,
+                        BlockType::Air
+                    );
                 }
-
-                const int surfaceHeight =
-                        m_terrainGenerator.surfaceHeightAt(
-                            worldX,
-                            worldZ
-                        );
-
-                // The current world only contains vertical chunk level y = 0.
-                if (surfaceHeight + trunkHeight + canopyHeight >= static_cast<int>(Chunk::Height)) {
-                    continue;
-                }
-
-                for (int offsetY = 1; offsetY <= trunkHeight; ++offsetY) {
-                    setBlockAtWorld(worldX, surfaceHeight + offsetY, worldZ, BlockType::Wood);
-                }
-
-                const int trunkTopY =
-                        surfaceHeight + trunkHeight;
-
-                for (int leafY = trunkTopY - 1; leafY <= trunkTopY; ++leafY) {
-                    for (int offsetZ = -1; offsetZ <= 1; ++offsetZ) {
-                        for (int offsetX = -1; offsetX <= 1; ++offsetX) {
-                            if (offsetX == 0 && offsetZ == 0) {
-                                continue;
-                            }
-
-                            setBlockAtWorld(worldX + offsetX, leafY, worldZ + offsetZ, BlockType::Leaves);
-                        }
-                    }
-                }
-                setBlockAtWorld(worldX, trunkTopY + 1, worldZ, BlockType::Leaves);
             }
         }
     }

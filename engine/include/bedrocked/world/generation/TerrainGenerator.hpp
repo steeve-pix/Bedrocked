@@ -6,6 +6,8 @@
 
 #include <cstdint>
 
+#include "ValueNoise3D.hpp"
+
 namespace bedrocked {
     class TerrainGenerator final {
     public:
@@ -13,9 +15,10 @@ namespace bedrocked {
 
         void generate(Chunk &chunk, ChunkPosition position) const;
 
-        [[nodiscard]] int surfaceHeightAt(int worldX,int worldZ) const noexcept;
+        [[nodiscard]] int surfaceHeightAt(int worldX, int worldZ) const noexcept;
 
     private:
         FractalNoise m_noise;
+        ValueNoise3D m_caveNoise;
     };
 } // namespace bedrocked
