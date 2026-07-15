@@ -14,6 +14,8 @@ namespace bedrocked {
 
         void moveRight(float distance) noexcept;
 
+        void setPosition(float x, float y, float z) noexcept;
+
     private:
         float m_x{};
         float m_y{};

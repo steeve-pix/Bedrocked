@@ -2,30 +2,25 @@
 
 #include "bedrocked/assets/Image.hpp"
 #include "bedrocked/core/Logger.hpp"
+#include "bedrocked/gameplay/Player.hpp"
 #include "bedrocked/input/Key.hpp"
 #include "bedrocked/math/Matrix4.hpp"
+#include "bedrocked/math/Vector3.hpp"
 #include "bedrocked/rendering/Camera.hpp"
 #include "bedrocked/rendering/Mesh.hpp"
 #include "bedrocked/rendering/opengl/ShaderProgram.hpp"
 #include "bedrocked/rendering/opengl/Texture2D.hpp"
-#include "bedrocked/world/chunk/Chunk.hpp"
-#include "bedrocked/world/chunk/ChunkMesher.hpp"
-#include "bedrocked/world/chunk/ChunkNeighbors.hpp"
-#include "bedrocked/world/chunk/ChunkPosition.hpp"
-#include "bedrocked/world/chunk/ChunkTransforms.hpp"
 #include "bedrocked/world/World.hpp"
 #include "bedrocked/world/chunk/ChunkManager.hpp"
+#include "bedrocked/world/chunk/ChunkMesher.hpp"
+#include "bedrocked/world/chunk/ChunkTransforms.hpp"
 
-#include <cassert>
-#include <cmath>
 #include <iostream>
-#include <string_view>
 #include <memory>
+#include <string_view>
 #include <vector>
 
 #include <glad/glad.h>
-
-#include "bedrocked/world/generation/ValueNoise.hpp"
 
 namespace bedrocked {
     namespace {
@@ -36,8 +31,8 @@ namespace bedrocked {
         constexpr float kNearClipPlane = 0.1f;
         constexpr float kFarClipPlane = 100.0f;
 
-        constexpr float kCameraSpeed = 20.0f;
         constexpr float kMouseSensitivity = 0.002f;
+        constexpr float kPlayerEyeHeight = 1.62f;
 
         constexpr double kStatisticsInterval = 10.0;
 
@@ -82,6 +77,11 @@ namespace bedrocked {
                     texture(blockTexture, vertexTextureCoordinates);
             }
         )";
+
+        struct RenderChunk {
+            Matrix4 model;
+            std::unique_ptr<Mesh> mesh;
+        };
     } // namespace
 
     Application::Application()
@@ -90,31 +90,6 @@ namespace bedrocked {
 
     int Application::run() {
         Logger::info("Bedrocked starting...");
-
-        {
-            const ValueNoise firstNoise{1234U};
-            const ValueNoise sameSeedNoise{1234U};
-            const ValueNoise differentSeedNoise{9876U};
-
-            const float firstSample =
-                    firstNoise.sample(4.25F, 7.75F);
-
-            const float repeatedSample =
-                    firstNoise.sample(4.25F, 7.75F);
-
-            const float sameSeedSample =
-                    sameSeedNoise.sample(4.25F, 7.75F);
-
-            const float differentSeedSample =
-                    differentSeedNoise.sample(4.25F, 7.75F);
-
-            assert(firstSample == repeatedSample);
-            assert(firstSample == sameSeedSample);
-            assert(firstSample != differentSeedSample);
-
-            assert(firstSample >= 0.0F);
-            assert(firstSample <= 1.0F);
-        }
 
         ShaderProgram shader{
             kVertexShaderSource,
@@ -129,6 +104,9 @@ namespace bedrocked {
             blockImage.pixels()
         };
 
+        /*
+         * Generate the world before building the GPU meshes.
+         */
         World world{1234U};
         world.generateTestWorld();
 
@@ -137,27 +115,21 @@ namespace bedrocked {
         const std::vector<ChunkPosition> positions =
                 chunkManager.positions();
 
-        assert(positions.size() == 9);
-
-        struct RenderChunk {
-            Matrix4 model;
-            std::unique_ptr<Mesh> mesh;
-        };
-
+        /*
+         * Every chunk has its own mesh and model matrix.
+         *
+         * There is deliberately no visual scene offset anymore.
+         * Rendering and physics now use the same world coordinates.
+         */
         std::vector<RenderChunk> renderChunks;
         renderChunks.reserve(positions.size());
-
-        const Matrix4 sceneOffset =
-                Matrix4::translation(
-                    -8.0F,
-                    -2.0F,
-                    -40.0F
-                );
 
         for (const ChunkPosition position: positions) {
             Chunk *chunk = chunkManager.chunkAt(position);
 
-            assert(chunk != nullptr);
+            if (chunk == nullptr) {
+                continue;
+            }
 
             const ChunkNeighbors neighbors =
                     chunkManager.neighborsOf(position);
@@ -177,13 +149,22 @@ namespace bedrocked {
             );
 
             renderChunks.push_back({
-                .model =
-                sceneOffset *
-                chunkModelMatrix(position),
-
+                .model = chunkModelMatrix(position),
                 .mesh = std::move(mesh)
             });
         }
+
+        /*
+         * Player position represents the center of the player’s feet.
+         * Starting at Y = 15 lets gravity drop the player onto terrain.
+         */
+        Player player{
+            Vector3{
+                .x = 0.5F,
+                .y = 15.0F,
+                .z = 0.5F
+            }
+        };
 
         Camera camera;
 
@@ -207,7 +188,10 @@ namespace bedrocked {
 
             m_window.pollEvents();
 
-            // MOUSE INPUT
+            /*
+             * Mouse input controls only camera orientation.
+             * Camera position will come from the Player.
+             */
             const CursorPosition currentCursor =
                     m_window.cursorPosition();
 
@@ -230,34 +214,26 @@ namespace bedrocked {
                 m_window.requestClose();
             }
 
-            const float movementDistance =
-                    kCameraSpeed * deltaTimeSeconds;
+            /*
+             * Gravity and vertical ground collision.
+             */
+            player.update(
+                deltaTimeSeconds,
+                world
+            );
 
-            if (m_window.isKeyDown(Key::W)) {
-                camera.moveForward(movementDistance);
-            }
+            /*
+             * Attach the camera to the player’s eye position.
+             */
+            const Vector3 &playerPosition =
+                    player.position();
 
-            if (m_window.isKeyDown(Key::S)) {
-                camera.moveForward(-movementDistance);
-            }
+            camera.setPosition(
+                playerPosition.x,
+                playerPosition.y + kPlayerEyeHeight,
+                playerPosition.z
+            );
 
-            if (m_window.isKeyDown(Key::A)) {
-                camera.moveRight(-movementDistance);
-            }
-
-            if (m_window.isKeyDown(Key::D)) {
-                camera.moveRight(movementDistance);
-            }
-
-            if (m_window.isKeyDown(Key::Space)) {
-                camera.move(0.0f, movementDistance, 0.0f);
-            }
-
-            if (m_window.isKeyDown(Key::LeftShift)) {
-                camera.move(0.0f, -movementDistance, 0.0f);
-            }
-
-            // FRAMEBUFFER AND PROJECTION
             const FrameBufferSize framebufferSize =
                     m_window.framebufferSize();
 
@@ -276,7 +252,9 @@ namespace bedrocked {
 
             const Matrix4 view = camera.viewMatrix();
 
-            // RENDERING
+            /*
+             * Render the world.
+             */
             m_renderer.clear();
 
             glActiveTexture(GL_TEXTURE0);
@@ -294,7 +272,9 @@ namespace bedrocked {
 
             m_window.swapBuffers();
 
-            // PERFORMANCE STATS
+            /*
+             * Performance statistics.
+             */
             statisticsElapsedTime += deltaTime;
             ++loopCount;
 
@@ -308,7 +288,8 @@ namespace bedrocked {
                         static_cast<double>(loopCount) *
                         1'000.0;
                 std::cout
-                        << "Loop rate: " << loopsPerSecond
+                        << "Loop rate: "
+                        << loopsPerSecond
                         << " iterations/s | Average loop time: "
                         << averageLoopTimeMilliseconds
                         << " ms\n";

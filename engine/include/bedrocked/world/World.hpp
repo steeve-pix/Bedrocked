@@ -15,6 +15,8 @@ namespace bedrocked {
 
         [[nodiscard]] const ChunkManager &chunks() const noexcept;
 
+        [[nodiscard]] BlockType blockAtWorld(int worldX, int worldY, int worldZ) const noexcept;
+
     private:
         std::uint32_t m_seed;
         ChunkManager m_chunkManager;
