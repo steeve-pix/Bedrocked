@@ -17,12 +17,15 @@
 #include "bedrocked/world/chunk/ChunkManager.hpp"
 
 #include <cassert>
+#include <cmath>
 #include <iostream>
 #include <string_view>
 #include <memory>
 #include <vector>
 
 #include <glad/glad.h>
+
+#include "bedrocked/world/generation/ValueNoise.hpp"
 
 namespace bedrocked {
     namespace {
@@ -87,6 +90,31 @@ namespace bedrocked {
 
     int Application::run() {
         Logger::info("Bedrocked starting...");
+
+        {
+            const ValueNoise firstNoise{1234U};
+            const ValueNoise sameSeedNoise{1234U};
+            const ValueNoise differentSeedNoise{9876U};
+
+            const float firstSample =
+                    firstNoise.sample(4.25F, 7.75F);
+
+            const float repeatedSample =
+                    firstNoise.sample(4.25F, 7.75F);
+
+            const float sameSeedSample =
+                    sameSeedNoise.sample(4.25F, 7.75F);
+
+            const float differentSeedSample =
+                    differentSeedNoise.sample(4.25F, 7.75F);
+
+            assert(firstSample == repeatedSample);
+            assert(firstSample == sameSeedSample);
+            assert(firstSample != differentSeedSample);
+
+            assert(firstSample >= 0.0F);
+            assert(firstSample <= 1.0F);
+        }
 
         ShaderProgram shader{
             kVertexShaderSource,
