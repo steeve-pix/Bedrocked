@@ -28,6 +28,8 @@
 
 #include <array>
 
+#include "bedrocked/gameplay/Hotbar.hpp"
+
 namespace bedrocked {
     namespace {
         // RENDERING CONFIG
@@ -325,7 +327,7 @@ namespace bedrocked {
             kOutlineFragmentShaderSource
         };
 
-        BlockType selectedBlock = BlockType::Stone;
+        Hotbar hotbar;
 
         while (!m_window.shouldClose()) {
             const double deltaTime = m_timer.tick();
@@ -400,23 +402,23 @@ namespace bedrocked {
             }
 
             if (m_window.isKeyDown(Key::Digit1)) {
-                selectedBlock = BlockType::Grass;
+                hotbar.select(0);
             }
 
             if (m_window.isKeyDown(Key::Digit2)) {
-                selectedBlock = BlockType::Dirt;
+                hotbar.select(1);
             }
 
             if (m_window.isKeyDown(Key::Digit3)) {
-                selectedBlock = BlockType::Stone;
+                hotbar.select(2);
             }
 
             if (m_window.isKeyDown(Key::Digit4)) {
-                selectedBlock = BlockType::Wood;
+                hotbar.select(3);
             }
 
             if (m_window.isKeyDown(Key::Digit5)) {
-                selectedBlock = BlockType::Leaves;
+                hotbar.select(4);
             }
 
             constexpr float playerSpeed = 4.0F;
@@ -513,7 +515,7 @@ namespace bedrocked {
                         placementPosition.x,
                         placementPosition.y,
                         placementPosition.z,
-                        selectedBlock
+                        hotbar.selectedBlock()
                     );
 
                     rebuildAroundBlock(placementPosition);
