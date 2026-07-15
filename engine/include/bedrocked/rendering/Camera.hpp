@@ -1,5 +1,6 @@
 #pragma once
 #include "../math/Matrix4.hpp"
+#include "bedrocked/math/Vector3.hpp"
 
 namespace bedrocked {
     class Camera final {
@@ -17,6 +18,8 @@ namespace bedrocked {
         void setPosition(float x, float y, float z) noexcept;
 
         [[nodiscard]] float yaw() const noexcept;
+
+        [[nodiscard]] Vector3 forwardDirection() const noexcept;
 
     private:
         float m_x{};

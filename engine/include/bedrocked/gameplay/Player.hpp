@@ -1,5 +1,6 @@
 #pragma once
 #include "bedrocked/math/Vector3.hpp"
+#include "bedrocked/world/block/BlockPosition.hpp"
 
 namespace bedrocked {
     class World;
@@ -17,6 +18,8 @@ namespace bedrocked {
         void move(float forward, float right, float yaw, float speed) noexcept;
 
         void jump(float jumpVelocity) noexcept;
+
+        [[nodiscard]] bool intersectsBlock(BlockPosition block) const noexcept;
 
     private:
         Vector3 m_position;
