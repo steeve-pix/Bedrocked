@@ -204,7 +204,7 @@ namespace bedrocked {
             previousCursor = currentCursor;
 
             camera.rotate(
-                static_cast<float>(mouseDeltaX) * kMouseSensitivity,
+                -static_cast<float>(mouseDeltaX) * kMouseSensitivity,
                 static_cast<float>(mouseDeltaY) * kMouseSensitivity
             );
 
@@ -216,6 +216,7 @@ namespace bedrocked {
 
             float forwardInput{};
             float rightInput{};
+            bool previousJumpKeyDown{};
 
             if (m_window.isKeyDown(Key::W)) {
                 forwardInput += 1.0f;
@@ -234,6 +235,19 @@ namespace bedrocked {
 
             constexpr float playerSpeed = 4.0F;
             player.move(forwardInput, rightInput, camera.yaw(), playerSpeed);
+
+            const bool jumpKeyDown =
+                    m_window.isKeyDown(Key::Space);
+
+            const bool jumpKeyPressed =
+                    jumpKeyDown && !previousJumpKeyDown;
+
+            previousJumpKeyDown = jumpKeyDown;
+
+            if (jumpKeyPressed) {
+                constexpr float jumpVelocity = 8.0F;
+                player.jump(jumpVelocity);
+            }
 
             /*
              * Gravity and vertical ground collision.

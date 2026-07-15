@@ -158,4 +158,13 @@ namespace bedrocked {
         m_velocity.z =
                 (forwardZ * forward + rightZ * right) * speed;
     }
+
+    void Player::jump(float jumpVelocity) noexcept {
+        if (!m_grounded) {
+            return;
+        }
+
+        m_velocity.y = jumpVelocity;
+        m_grounded = false;
+    }
 } // namespace bedrocked
