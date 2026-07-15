@@ -19,6 +19,7 @@ add_library(bedrocked_engine STATIC
 
         src/world/chunk/Chunk.cpp
         src/world/chunk/ChunkMesher.cpp
+        src/world/World.cpp
 )
 
 #

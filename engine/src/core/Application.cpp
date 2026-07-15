@@ -20,6 +20,7 @@
 
 #include <glad/glad.h>
 
+#include "bedrocked/world/World.hpp"
 #include "bedrocked/world/chunk/ChunkManager.hpp"
 
 namespace bedrocked {
@@ -99,59 +100,6 @@ namespace bedrocked {
             blockImage.pixels()
         };
 
-        // Two solid blocks touching across a chunk boundary.
-        Chunk leftChunk;
-        Chunk rightChunk;
-
-        leftChunk.setBlock(
-            static_cast<int>(Chunk::Width) - 1,
-            0,
-            0,
-            BlockType::Stone
-        );
-
-        rightChunk.setBlock(
-            0,
-            0,
-            0,
-            BlockType::Stone
-        );
-
-        const ChunkNeighbors leftNeighbors{
-            .right = &rightChunk
-        };
-
-        const ChunkNeighbors rightNeighbors{
-            .left = &leftChunk
-        };
-
-        const ChunkMeshData leftMeshData =
-                buildChunkMeshData(leftChunk, leftNeighbors);
-
-        const ChunkMeshData rightMeshData =
-                buildChunkMeshData(rightChunk, rightNeighbors);
-
-        // Each boundary block has five visible faces because the shared face is removed.
-        assert(leftMeshData.vertices.size() == 20);
-        assert(leftMeshData.indices.size() == 30);
-        assert(rightMeshData.vertices.size() == 20);
-        assert(rightMeshData.indices.size() == 30);
-
-        // Upload the generated CPU mesh data to GPU resources.
-        Mesh leftMesh{
-            leftMeshData.vertices.data(),
-            leftMeshData.vertices.size(),
-            leftMeshData.indices.data(),
-            leftMeshData.indices.size()
-        };
-
-        Mesh rightMesh{
-            rightMeshData.vertices.data(),
-            rightMeshData.vertices.size(),
-            rightMeshData.indices.data(),
-            rightMeshData.indices.size()
-        };
-
         constexpr ChunkPosition leftPosition{
             .x = 0,
             .y = 0,
@@ -168,11 +116,49 @@ namespace bedrocked {
         const Matrix4 sceneOffset =
                 Matrix4::translation(-16.0F, -0.5F, -6.0F);
 
-        const Matrix4 leftModel =
-                sceneOffset * chunkModelMatrix(leftPosition);
+        World world;
+        world.generateTestWorld();
 
-        const Matrix4 rightModel =
-                sceneOffset * chunkModelMatrix(rightPosition);
+        ChunkManager &chunkManager =
+                world.chunks();
+
+        constexpr ChunkPosition worldChunkPosition{
+            .x = 0,
+            .y = 0,
+            .z = 0
+        };
+
+        Chunk *worldChunk =
+                chunkManager.chunkAt(worldChunkPosition);
+
+        assert(worldChunk != nullptr);
+
+        const ChunkNeighbors worldNeighbors =
+                chunkManager.neighborsOf(worldChunkPosition);
+
+        const ChunkMeshData worldMeshData =
+                buildChunkMeshData(
+                    *worldChunk,
+                    worldNeighbors
+                );
+
+        assert(worldMeshData.vertices.size() == 2'304);
+        assert(worldMeshData.indices.size() == 3'456);
+
+        Mesh worldMesh{
+            worldMeshData.vertices.data(),
+            worldMeshData.vertices.size(),
+            worldMeshData.indices.data(),
+            worldMeshData.indices.size()
+        };
+
+        const Matrix4 worldModel =
+                Matrix4::translation(
+                    -8.0F,
+                    -2.0F,
+                    -20.0F
+                ) *
+                chunkModelMatrix(worldChunkPosition);
 
         Camera camera;
 
@@ -275,11 +261,8 @@ namespace bedrocked {
             shader.setMat4("projection", projection.data());
             shader.setMat4("view", view.data());
 
-            shader.setMat4("model", leftModel.data());
-            m_renderer.draw(leftMesh);
-
-            shader.setMat4("model", rightModel.data());
-            m_renderer.draw(rightMesh);
+            shader.setMat4("model", worldModel.data());
+            m_renderer.draw(worldMesh);
 
             m_window.swapBuffers();
 
