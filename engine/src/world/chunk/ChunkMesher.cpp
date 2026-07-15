@@ -15,14 +15,15 @@ namespace {
     constexpr bedrocked::TextureRegion kDirtRegion =
             kAtlasLayout.region(0, 0);
 
-    constexpr bedrocked::TextureRegion kWoodRegion =
-            kAtlasLayout.region(1, 0);
-
-    constexpr bedrocked::TextureRegion kGrassRegion =
+    constexpr bedrocked::TextureRegion kGrassTopRegion =
             kAtlasLayout.region(0, 1);
 
-    constexpr bedrocked::TextureRegion kStoneRegion =
+    constexpr bedrocked::TextureRegion kGrassSideRegion =
             kAtlasLayout.region(1, 1);
+
+    constexpr bedrocked::TextureRegion kStoneRegion =
+            kAtlasLayout.region(1, 0);
+
 
     [[nodiscard]] constexpr bedrocked::TextureRegion textureRegionFor(
         bedrocked::BlockType type,
@@ -30,19 +31,20 @@ namespace {
         switch (type) {
             case bedrocked::BlockType::Grass:
                 if (face == bedrocked::BlockFace::Top) {
-                    return kGrassRegion;
+                    return kGrassTopRegion;
                 }
 
-                return kDirtRegion;
+                if (face == bedrocked::BlockFace::Bottom) {
+                    return kDirtRegion;
+                }
+
+                return kGrassSideRegion;
 
             case bedrocked::BlockType::Dirt:
                 return kDirtRegion;
 
             case bedrocked::BlockType::Stone:
                 return kStoneRegion;
-
-            case bedrocked::BlockType::Wood:
-                return kWoodRegion;
 
             case bedrocked::BlockType::Air:
                 return kDirtRegion;

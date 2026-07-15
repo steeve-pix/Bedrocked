@@ -22,6 +22,7 @@ add_library(bedrocked_engine STATIC
         src/world/World.cpp
 
         src/world/generation/ValueNoise.cpp
+        src/world/generation/FractalNoise.cpp
 )
 
 #

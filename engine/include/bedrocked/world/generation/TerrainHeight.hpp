@@ -1,25 +1,33 @@
 #pragma once
 
+#include "bedrocked/world/chunk/Chunk.hpp"
 #include <algorithm>
 #include <cmath>
 
-#include "bedrocked/world/chunk/Chunk.hpp"
+#include "FractalNoise.hpp"
+
 
 namespace bedrocked {
-    [[nodiscard]] inline int terrainHeight(int worldX, int worldZ) noexcept {
-        constexpr float baseHeight = 5.0f;
-        constexpr float amplitude = 3.0f;
-        constexpr float frequency = 0.12f;
+    [[nodiscard]] inline int terrainHeight(const FractalNoise &noise, int worldX, int worldZ) noexcept {
+        constexpr float terrainScale = 0.04f;
 
-        const float xWave =
-                std::sin(static_cast<float>(worldX) * frequency);
+        constexpr int octaveCount = 4;
+        constexpr float persistence = 0.5f;
+        constexpr float lacunarity = 2.0f;
 
-        const float zWave =
-                std::cos(static_cast<float>(worldZ) * frequency);
+        constexpr int minimumHeight = 2;
+        constexpr int heightRange = 10;
 
-        const float height =
-                baseHeight * amplitude * 0.5f * (xWave * zWave);
+        const float noiseValue = noise.sample(
+            static_cast<float>(worldX) * terrainScale,
+            static_cast<float>(worldZ) * terrainScale,
+            octaveCount, persistence,
+            lacunarity
+        );
 
-        return std::clamp(static_cast<int>(std::round(height)), 1, static_cast<int>(Chunk::Height) - 1);
+        const int height =
+                minimumHeight + static_cast<int>(std::round(noiseValue * static_cast<float>(heightRange)));
+
+        return std::clamp(height, 1, static_cast<int>(Chunk::Height) - 1);
     }
 } // namespace bedrocked
