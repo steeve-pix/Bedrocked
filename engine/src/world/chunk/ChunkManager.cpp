@@ -21,8 +21,7 @@ namespace bedrocked {
         return nullptr;
     }
 
-    const Chunk *ChunkManager::chunkAt(
-        ChunkPosition position) const noexcept {
+    const Chunk *ChunkManager::chunkAt(ChunkPosition position) const noexcept {
         for (const Entry &entry: m_chunks) {
             if (entry.position == position) {
                 return &entry.chunk;
@@ -30,5 +29,22 @@ namespace bedrocked {
         }
 
         return nullptr;
+    }
+
+    ChunkNeighbors ChunkManager::neighborsOf(
+        ChunkPosition position) const noexcept {
+        return ChunkNeighbors{
+            .front = chunkAt({position.x, position.y, position.z + 1}),
+
+            .back = chunkAt({position.x, position.y, position.z - 1}),
+
+            .left = chunkAt({position.x - 1, position.y, position.z}),
+
+            .right = chunkAt({position.x + 1, position.y, position.z}),
+
+            .top = chunkAt({position.x, position.y + 1, position.z}),
+
+            .bottom = chunkAt({position.x, position.y - 1, position.z})
+        };
     }
 }

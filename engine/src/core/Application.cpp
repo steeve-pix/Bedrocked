@@ -20,6 +20,8 @@
 
 #include <glad/glad.h>
 
+#include "bedrocked/world/chunk/ChunkManager.hpp"
+
 namespace bedrocked {
     namespace {
         // RENDERING CONFIG
