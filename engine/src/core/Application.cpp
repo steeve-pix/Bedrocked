@@ -191,6 +191,7 @@ namespace bedrocked {
 
         std::optional<BlockPosition> previousTarget;
         bool previousLeftMouseDown{};
+        bool previousRightMouseDown{};
 
         const auto rebuildChunkMesh = [&chunkManager, &renderChunks](ChunkPosition position) {
             Chunk *chunk =
@@ -227,6 +228,28 @@ namespace bedrocked {
                 return;
             }
         };
+        const auto rebuildAroundBlock = [&rebuildChunkMesh](BlockPosition block) {
+            const ChunkPosition owningChunk =
+                    chunkPositionForBlock(block);
+
+            constexpr std::array offsets{
+                ChunkPosition{0, 0, 0},
+                ChunkPosition{1, 0, 0},
+                ChunkPosition{-1, 0, 0},
+                ChunkPosition{0, 1, 0},
+                ChunkPosition{0, -1, 0},
+                ChunkPosition{0, 0, 1},
+                ChunkPosition{0, 0, -1}
+            };
+
+            for (const ChunkPosition offset: offsets) {
+                rebuildChunkMesh({
+                    .x = owningChunk.x + offset.x,
+                    .y = owningChunk.y + offset.y,
+                    .z = owningChunk.z + offset.z
+                });
+            }
+        };
 
         while (!m_window.shouldClose()) {
             const double deltaTime = m_timer.tick();
@@ -246,6 +269,14 @@ namespace bedrocked {
             if (leftMousePressed) {
                 std::cout << "Left mouse clicked\n";
             }
+
+            const bool rightMouseDown =
+    m_window.isMouseButtonDown(MouseButton::Right);
+
+            const bool rightMousePressed =
+                rightMouseDown && !previousRightMouseDown;
+
+            previousRightMouseDown = rightMouseDown;
 
             /*
              * Mouse input controls only camera orientation.
@@ -366,28 +397,31 @@ namespace bedrocked {
                     BlockType::Air
                 );
 
-                const ChunkPosition affectedChunk =
-                        chunkPositionForBlock(destroyedBlock);
+                rebuildAroundBlock(destroyedBlock);
+            }
 
-                constexpr std::array neighborOffsets{
-                    ChunkPosition{0, 0, 0},
-                    ChunkPosition{1, 0, 0},
-                    ChunkPosition{-1, 0, 0},
-                    ChunkPosition{0, 1, 0},
-                    ChunkPosition{0, -1, 0},
-                    ChunkPosition{0, 0, 1},
-                    ChunkPosition{0, 0, -1}
-                };
+            if (rightMousePressed && raycastHit.has_value()) {
+                const BlockPosition placementPosition =
+                    raycastHit->adjacentBlock;
 
-                for (const ChunkPosition offset: neighborOffsets) {
-                    rebuildChunkMesh({
-                        .x = affectedChunk.x + offset.x,
-                        .y = affectedChunk.y + offset.y,
-                        .z = affectedChunk.z + offset.z
-                    });
-                }
+                const BlockType existingBlock =
+                    world.blockAtWorld(
+                        placementPosition.x,
+                        placementPosition.y,
+                        placementPosition.z
+                    );
 
-                rebuildChunkMesh(affectedChunk);
+                if (existingBlock == BlockType::Air &&
+                    !player.intersectsBlock(placementPosition)) {
+                    world.setBlockAtWorld(
+                        placementPosition.x,
+                        placementPosition.y,
+                        placementPosition.z,
+                        BlockType::Stone
+                    );
+
+                    rebuildAroundBlock(placementPosition);
+                    }
             }
 
             camera.setPosition(

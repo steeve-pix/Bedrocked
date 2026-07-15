@@ -187,4 +187,55 @@ namespace bedrocked {
         m_velocity.y = jumpVelocity;
         m_grounded = false;
     }
+
+    bool Player::intersectsBlock(BlockPosition block) const noexcept {
+        constexpr float halfWidth = 0.3F;
+        constexpr float height = 1.8F;
+
+        const float playerMinimumX =
+                m_position.x - halfWidth;
+
+        const float playerMaximumX =
+                m_position.x + halfWidth;
+
+        const float playerMinimumY =
+                m_position.y;
+
+        const float playerMaximumY =
+                m_position.y + height;
+
+        const float playerMinimumZ =
+                m_position.z - halfWidth;
+
+        const float playerMaximumZ =
+                m_position.z + halfWidth;
+
+        const float blockMinimumX =
+                static_cast<float>(block.x);
+
+        const float blockMaximumX =
+                blockMinimumX + 1.0F;
+
+        const float blockMinimumY =
+                static_cast<float>(block.y);
+
+        const float blockMaximumY =
+                blockMinimumY + 1.0F;
+
+        const float blockMinimumZ =
+                static_cast<float>(block.z);
+
+        const float blockMaximumZ =
+                blockMinimumZ + 1.0F;
+
+        return
+                playerMaximumX > blockMinimumX &&
+                playerMinimumX < blockMaximumX &&
+
+                playerMaximumY > blockMinimumY &&
+                playerMinimumY < blockMaximumY &&
+
+                playerMaximumZ > blockMinimumZ &&
+                playerMinimumZ < blockMaximumZ;
+    }
 } // namespace bedrocked
