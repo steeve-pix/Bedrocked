@@ -325,6 +325,8 @@ namespace bedrocked {
             kOutlineFragmentShaderSource
         };
 
+        BlockType selectedBlock = BlockType::Stone;
+
         while (!m_window.shouldClose()) {
             const double deltaTime = m_timer.tick();
             const float deltaTimeSeconds =
@@ -395,6 +397,26 @@ namespace bedrocked {
 
             if (m_window.isKeyDown(Key::A)) {
                 rightInput -= 1.0F;
+            }
+
+            if (m_window.isKeyDown(Key::Digit1)) {
+                selectedBlock = BlockType::Grass;
+            }
+
+            if (m_window.isKeyDown(Key::Digit2)) {
+                selectedBlock = BlockType::Dirt;
+            }
+
+            if (m_window.isKeyDown(Key::Digit3)) {
+                selectedBlock = BlockType::Stone;
+            }
+
+            if (m_window.isKeyDown(Key::Digit4)) {
+                selectedBlock = BlockType::Wood;
+            }
+
+            if (m_window.isKeyDown(Key::Digit5)) {
+                selectedBlock = BlockType::Leaves;
             }
 
             constexpr float playerSpeed = 4.0F;
@@ -491,7 +513,7 @@ namespace bedrocked {
                         placementPosition.x,
                         placementPosition.y,
                         placementPosition.z,
-                        BlockType::Stone
+                        selectedBlock
                     );
 
                     rebuildAroundBlock(placementPosition);
