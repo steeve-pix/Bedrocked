@@ -12,6 +12,7 @@ namespace bedrocked {
         Digit2,
         Digit3,
         Digit4,
-        Digit5
+        Digit5,
+        F3
     };
 } // namespace bedrocked

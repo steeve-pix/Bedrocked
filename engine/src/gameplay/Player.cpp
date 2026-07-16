@@ -45,7 +45,7 @@ namespace bedrocked {
     }
 
     void Player::update(float deltaTime, const World &world) noexcept {
-        constexpr float gravity = -20.0F;
+        constexpr float gravity = -23.3F;
         constexpr float halfWidth = 0.3F;
         constexpr float collisionEpsilon = 0.001F;
 

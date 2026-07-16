@@ -238,6 +238,9 @@ namespace bedrocked {
         double statisticsElapsedTime{};
         int loopCount{};
 
+        bool debugOverlayVisible{true};
+        bool previousF3KeyDown{};
+
         while (!m_window.shouldClose()) {
             const double deltaTime = m_timer.tick();
 
@@ -309,6 +312,19 @@ namespace bedrocked {
 
             if (m_window.isKeyDown(Key::Digit5)) {
                 hotbar.select(4);
+            }
+
+            const bool f3KeyDown =
+                    m_window.isKeyDown(Key::F3);
+
+            const bool f3KeyPressed =
+                    f3KeyDown && !previousF3KeyDown;
+
+            previousF3KeyDown = f3KeyDown;
+
+            if (f3KeyPressed) {
+                debugOverlayVisible =
+                        !debugOverlayVisible;
             }
 
             /*
@@ -536,7 +552,9 @@ namespace bedrocked {
              */
             crosshairUI.draw();
             hotbarUI.draw(hotbar);
-            debugOverlay.draw(debugData);
+            if (debugOverlayVisible) {
+                debugOverlay.draw(debugData);
+            }
 
             imguiLayer.endFrame();
 
