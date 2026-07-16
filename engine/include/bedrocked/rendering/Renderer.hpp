@@ -13,5 +13,7 @@ namespace bedrocked {
         void draw(const Mesh &mesh) noexcept;
 
         void setViewPort(int width, int height) noexcept;
+
+        void drawLines(const Mesh &mesh) noexcept;
     };
 } // namespace bedrocked

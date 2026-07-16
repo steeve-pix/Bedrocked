@@ -20,6 +20,20 @@ add_library(bedrocked_engine STATIC
         src/world/chunk/Chunk.cpp
         src/world/chunk/ChunkMesher.cpp
         src/world/World.cpp
+
+        src/world/generation/ValueNoise.cpp
+        src/world/generation/FractalNoise.cpp
+        src/world/generation/TerrainGenerator.cpp
+        src/world/generation/ValueNoise3D.cpp
+        src/gameplay/Player.cpp
+        src/world/block/BlockRaycast.cpp
+        src/ui/ImGuiLayer.cpp
+        src/ui/HotbarUI.cpp
+        src/rendering/ChunkRenderer.cpp
+        src/gameplay/BlockInteractor.cpp
+        src/ui/CrosshairUI.cpp
+        src/ui/DebugOverlay.cpp
+        src/ui/PauseMenu.cpp
 )
 
 #
@@ -27,7 +41,7 @@ add_library(Bedrocked::Engine ALIAS bedrocked_engine)
 
 target_compile_features(bedrocked_engine
         PUBLIC
-            cxx_std_20
+        cxx_std_20
 )
 
 target_include_directories(bedrocked_engine
@@ -41,4 +55,5 @@ target_link_libraries(bedrocked_engine
         glad
         OpenGL::GL
         stb
+        imgui
 )

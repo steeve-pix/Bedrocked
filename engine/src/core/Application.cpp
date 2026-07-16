@@ -2,43 +2,56 @@
 
 #include "bedrocked/assets/Image.hpp"
 #include "bedrocked/core/Logger.hpp"
+#include "bedrocked/gameplay/Hotbar.hpp"
+#include "bedrocked/gameplay/Player.hpp"
 #include "bedrocked/input/Key.hpp"
+#include "bedrocked/input/MouseButton.hpp"
 #include "bedrocked/math/Matrix4.hpp"
+#include "bedrocked/math/Vector3.hpp"
 #include "bedrocked/rendering/Camera.hpp"
+#include "bedrocked/rendering/ChunkRenderer.hpp"
 #include "bedrocked/rendering/Mesh.hpp"
 #include "bedrocked/rendering/opengl/ShaderProgram.hpp"
 #include "bedrocked/rendering/opengl/Texture2D.hpp"
-#include "bedrocked/world/chunk/Chunk.hpp"
-#include "bedrocked/world/chunk/ChunkMesher.hpp"
-#include "bedrocked/world/chunk/ChunkNeighbors.hpp"
-#include "bedrocked/world/chunk/ChunkPosition.hpp"
-#include "bedrocked/world/chunk/ChunkTransforms.hpp"
+#include "bedrocked/ui/HotbarUI.hpp"
+#include "bedrocked/ui/ImGuiLayer.hpp"
 #include "bedrocked/world/World.hpp"
+#include "bedrocked/world/block/BlockPosition.hpp"
 #include "bedrocked/world/chunk/ChunkManager.hpp"
+#include "bedrocked/gameplay/BlockInteractor.hpp"
+#include "bedrocked/ui/CrosshairUI.hpp"
+#include "bedrocked/ui/DebugOverlay.hpp"
 
-#include <cassert>
+#include <cstdint>
 #include <iostream>
+#include <iterator>
+#include <optional>
 #include <string_view>
-#include <memory>
-#include <vector>
+#include <cstddef>
 
 #include <glad/glad.h>
 
+#include "bedrocked/gameplay/GameState.hpp"
+#include "bedrocked/ui/PauseMenu.hpp"
+
 namespace bedrocked {
     namespace {
-        // RENDERING CONFIG
         constexpr float kPi = 3.14159265358979323846F;
-        constexpr float kFieldOfView = 60.0f * kPi / 180.0f;
 
-        constexpr float kNearClipPlane = 0.1f;
-        constexpr float kFarClipPlane = 100.0f;
+        constexpr float kFieldOfView =
+                60.0F * kPi / 180.0F;
 
-        constexpr float kCameraSpeed = 2.0f;
-        constexpr float kMouseSensitivity = 0.002f;
+        constexpr float kNearClipPlane = 0.1F;
+        constexpr float kFarClipPlane = 100.0F;
+
+        constexpr float kMouseSensitivity = 0.002F;
+        constexpr float kPlayerEyeHeight = 1.62F;
+        constexpr float kPlayerSpeed = 4.0F;
+        constexpr float kJumpVelocity = 8.0F;
+        constexpr float kInteractionReach = 5.0F;
 
         constexpr double kStatisticsInterval = 10.0;
 
-        // SHADERS
         constexpr std::string_view kVertexShaderSource = R"(
             #version 330 core
 
@@ -79,6 +92,72 @@ namespace bedrocked {
                     texture(blockTexture, vertexTextureCoordinates);
             }
         )";
+
+        constexpr std::string_view kOutlineVertexShaderSource = R"(
+            #version 330 core
+
+            layout(location = 0) in vec3 position;
+            layout(location = 1) in vec3 color;
+
+            uniform mat4 model;
+            uniform mat4 view;
+            uniform mat4 projection;
+
+            out vec3 vertexColor;
+
+            void main()
+            {
+                gl_Position =
+                    projection * view * model * vec4(position, 1.0);
+
+                vertexColor = color;
+            }
+        )";
+
+        constexpr std::string_view kOutlineFragmentShaderSource = R"(
+            #version 330 core
+
+            in vec3 vertexColor;
+
+            out vec4 fragmentColor;
+
+            void main()
+            {
+                fragmentColor = vec4(vertexColor, 1.0);
+            }
+        )";
+
+        constexpr Vertex kOutlineVertices[]{
+            {{-0.5F, -0.5F, 0.5F}, {1.0F, 1.0F, 0.0F}, {0.0F, 0.0F}},
+            {{0.5F, -0.5F, 0.5F}, {1.0F, 1.0F, 0.0F}, {0.0F, 0.0F}},
+            {{0.5F, 0.5F, 0.5F}, {1.0F, 1.0F, 0.0F}, {0.0F, 0.0F}},
+            {{-0.5F, 0.5F, 0.5F}, {1.0F, 1.0F, 0.0F}, {0.0F, 0.0F}},
+
+            {{-0.5F, -0.5F, -0.5F}, {1.0F, 1.0F, 0.0F}, {0.0F, 0.0F}},
+            {{0.5F, -0.5F, -0.5F}, {1.0F, 1.0F, 0.0F}, {0.0F, 0.0F}},
+            {{0.5F, 0.5F, -0.5F}, {1.0F, 1.0F, 0.0F}, {0.0F, 0.0F}},
+            {{-0.5F, 0.5F, -0.5F}, {1.0F, 1.0F, 0.0F}, {0.0F, 0.0F}}
+        };
+
+        constexpr std::uint32_t kOutlineIndices[]{
+            // Front
+            0, 1,
+            1, 2,
+            2, 3,
+            3, 0,
+
+            // Back
+            4, 5,
+            5, 6,
+            6, 7,
+            7, 4,
+
+            // Connections
+            0, 4,
+            1, 5,
+            2, 6,
+            3, 7
+        };
     } // namespace
 
     Application::Application()
@@ -88,12 +167,19 @@ namespace bedrocked {
     int Application::run() {
         Logger::info("Bedrocked starting...");
 
-        ShaderProgram shader{
+        ShaderProgram worldShader{
             kVertexShaderSource,
             kFragmentShaderSource
         };
 
-        Image blockImage{"assets/textures/block_atlas.png"};
+        ShaderProgram outlineShader{
+            kOutlineVertexShaderSource,
+            kOutlineFragmentShaderSource
+        };
+
+        Image blockImage{
+            "assets/textures/block_atlas.png"
+        };
 
         Texture2D blockTexture{
             blockImage.width(),
@@ -101,135 +187,362 @@ namespace bedrocked {
             blockImage.pixels()
         };
 
-        World world;
+        World world{1234U};
         world.generateTestWorld();
 
-        ChunkManager &chunkManager = world.chunks();
+        ChunkManager &chunkManager =
+                world.chunks();
 
-        const std::vector<ChunkPosition> positions =
-                chunkManager.positions();
+        ChunkRenderer chunkRenderer;
+        chunkRenderer.build(chunkManager);
 
-        assert(positions.size() == 9);
+        const std::size_t loadedChunkCount =
+                chunkManager.positions().size();
 
-        struct RenderChunk {
-            Matrix4 model;
-            std::unique_ptr<Mesh> mesh;
+        Mesh selectionOutline{
+            kOutlineVertices, std::size(kOutlineVertices), kOutlineIndices, std::size(kOutlineIndices)
         };
 
-        std::vector<RenderChunk> renderChunks;
-        renderChunks.reserve(positions.size());
-
-        const Matrix4 sceneOffset =
-                Matrix4::translation(
-                    -8.0F,
-                    -2.0F,
-                    -40.0F
-                );
-
-        for (const ChunkPosition position: positions) {
-            Chunk *chunk = chunkManager.chunkAt(position);
-
-            assert(chunk != nullptr);
-
-            const ChunkNeighbors neighbors =
-                    chunkManager.neighborsOf(position);
-
-            const ChunkMeshData meshData =
-                    buildChunkMeshData(*chunk, neighbors);
-
-            if (meshData.empty()) {
-                continue;
+        Player player{
+            Vector3{
+                .x = 0.5F,
+                .y = 15.0F,
+                .z = 0.5F
             }
-
-            auto mesh = std::make_unique<Mesh>(
-                meshData.vertices.data(),
-                meshData.vertices.size(),
-                meshData.indices.data(),
-                meshData.indices.size()
-            );
-
-            renderChunks.push_back({
-                .model =
-                sceneOffset *
-                chunkModelMatrix(position),
-
-                .mesh = std::move(mesh)
-            });
-        }
+        };
 
         Camera camera;
+        Hotbar hotbar;
+        HotbarUI hotbarUI;
+        CrosshairUI crosshairUI;
+        DebugOverlay debugOverlay;
+
+        ImGuiLayer imguiLayer{m_window.nativeHandle()};
 
         m_renderer.setClearColor(0.1F, 0.2F, 0.3F, 1.0F);
+
+        worldShader.use();
+        worldShader.setInt("blockTexture", 0);
+
+
+        BlockInteractor blockInteractor{
+            kInteractionReach
+        };
+
+        GameState gameState = GameState::Playing;
+
+        PauseMenu pauseMenu;
+
+        bool previousEscapeKeyDown{};
+        bool previousLeftMouseDown{};
+        bool previousRightMouseDown{};
+        bool previousJumpKeyDown{};
+        bool previousF3KeyDown{};
+
+        double statisticsElapsedTime{};
+        int loopCount{};
+
+        bool debugOverlayVisible{true};
 
         m_window.setCursorCaptured(true);
 
         CursorPosition previousCursor =
                 m_window.cursorPosition();
 
-        shader.use();
-        shader.setInt("blockTexture", 0);
-
-        double statisticsElapsedTime{};
-        int loopCount{};
-
         while (!m_window.shouldClose()) {
             const double deltaTime = m_timer.tick();
-            const float deltaTimeSeconds =
-                    static_cast<float>(deltaTime);
+
+            const auto deltaTimeSeconds = static_cast<float>(deltaTime);
 
             m_window.pollEvents();
 
-            // MOUSE INPUT
-            const CursorPosition currentCursor =
-                    m_window.cursorPosition();
+            /*
+             * Pause toggle
+             */
+            const bool escapeKeyDown =
+                    m_window.isKeyDown(Key::Escape);
 
-            const double mouseDeltaX =
-                    currentCursor.x - previousCursor.x;
+            const bool escapeKeyPressed =
+                    escapeKeyDown &&
+                    !previousEscapeKeyDown;
 
-            const double mouseDeltaY =
-                    previousCursor.y - currentCursor.y;
+            previousEscapeKeyDown =
+                    escapeKeyDown;
 
-            previousCursor = currentCursor;
+            if (escapeKeyPressed) {
+                if (gameState == GameState::Playing) {
+                    gameState = GameState::Paused;
+                    m_window.setCursorCaptured(false);
+                } else {
+                    gameState = GameState::Playing;
+                    m_window.setCursorCaptured(true);
 
-            camera.rotate(
-                static_cast<float>(mouseDeltaX) * kMouseSensitivity,
-                static_cast<float>(mouseDeltaY) * kMouseSensitivity
+                    // Prevent a large camera movement after recapturing.
+                    previousCursor =
+                            m_window.cursorPosition();
+                }
+            }
+
+            /*
+             * Debug-overlay toggle
+             */
+            const bool f3KeyDown =
+                    m_window.isKeyDown(Key::F3);
+
+            const bool f3KeyPressed =
+                    f3KeyDown && !previousF3KeyDown;
+
+            previousF3KeyDown = f3KeyDown;
+
+            if (f3KeyPressed) {
+                debugOverlayVisible =
+                        !debugOverlayVisible;
+            }
+
+            const bool playing =
+                    gameState == GameState::Playing;
+
+            if (playing) {
+                /*
+                 * Mouse-look
+                 */
+                const CursorPosition currentCursor =
+                        m_window.cursorPosition();
+
+                const double mouseDeltaX =
+                        currentCursor.x -
+                        previousCursor.x;
+
+                const double mouseDeltaY =
+                        previousCursor.y -
+                        currentCursor.y;
+
+                previousCursor =
+                        currentCursor;
+
+                camera.rotate(
+                    -static_cast<float>(mouseDeltaX) *
+                    kMouseSensitivity,
+
+                    static_cast<float>(mouseDeltaY) *
+                    kMouseSensitivity
+                );
+
+                /*
+                 * Hotbar selection
+                 */
+                if (m_window.isKeyDown(Key::Digit1)) {
+                    hotbar.select(0);
+                }
+
+                if (m_window.isKeyDown(Key::Digit2)) {
+                    hotbar.select(1);
+                }
+
+                if (m_window.isKeyDown(Key::Digit3)) {
+                    hotbar.select(2);
+                }
+
+                if (m_window.isKeyDown(Key::Digit4)) {
+                    hotbar.select(3);
+                }
+
+                if (m_window.isKeyDown(Key::Digit5)) {
+                    hotbar.select(4);
+                }
+
+                /*
+                 * Player movement
+                 */
+                float forwardInput{};
+                float rightInput{};
+
+                if (m_window.isKeyDown(Key::W)) {
+                    forwardInput += 1.0F;
+                }
+
+                if (m_window.isKeyDown(Key::S)) {
+                    forwardInput -= 1.0F;
+                }
+
+                if (m_window.isKeyDown(Key::D)) {
+                    rightInput += 1.0F;
+                }
+
+                if (m_window.isKeyDown(Key::A)) {
+                    rightInput -= 1.0F;
+                }
+
+                player.move(
+                    forwardInput,
+                    rightInput,
+                    camera.yaw(),
+                    kPlayerSpeed
+                );
+
+                /*
+                 * Jumping
+                 */
+                const bool jumpKeyDown =
+                        m_window.isKeyDown(Key::Space);
+
+                const bool jumpKeyPressed =
+                        jumpKeyDown &&
+                        !previousJumpKeyDown;
+
+                previousJumpKeyDown =
+                        jumpKeyDown;
+
+                if (jumpKeyPressed) {
+                    player.jump(kJumpVelocity);
+                }
+
+                /*
+                 * Gravity and collision
+                 */
+                player.update(
+                    deltaTimeSeconds,
+                    world
+                );
+
+                /*
+                 * Block targeting
+                 */
+                const Vector3 &currentPlayerPosition =
+                        player.position();
+
+                const Vector3 rayOrigin{
+                    .x = currentPlayerPosition.x,
+                    .y = currentPlayerPosition.y +
+                         kPlayerEyeHeight,
+                    .z = currentPlayerPosition.z
+                };
+
+                blockInteractor.updateTarget(
+                    world,
+                    rayOrigin,
+                    camera.forwardDirection()
+                );
+
+                /*
+                 * Mouse-button press detection
+                 */
+                const bool leftMouseDown =
+                        m_window.isMouseButtonDown(
+                            MouseButton::Left
+                        );
+
+                const bool leftMousePressed =
+                        leftMouseDown &&
+                        !previousLeftMouseDown;
+
+                previousLeftMouseDown =
+                        leftMouseDown;
+
+                const bool rightMouseDown =
+                        m_window.isMouseButtonDown(
+                            MouseButton::Right
+                        );
+
+                const bool rightMousePressed =
+                        rightMouseDown &&
+                        !previousRightMouseDown;
+
+                previousRightMouseDown =
+                        rightMouseDown;
+
+                if (leftMousePressed) {
+                    const std::optional<BlockType> destroyedBlock = blockInteractor.destroyTargetedBlock(
+                        world,
+                        chunkManager,
+                        chunkRenderer
+                    );
+                    if (destroyedBlock.has_value()) {
+                        hotbar.add(destroyedBlock.value());
+                    }
+                }
+
+                if (rightMousePressed &&
+                    hotbar.selectedQuantity() > 0) {
+                    const BlockType selectedBlock =
+                            hotbar.selectedBlock();
+
+                    const bool blockWasPlaced =
+                            blockInteractor.placeBlock(
+                                world,
+                                chunkManager,
+                                chunkRenderer,
+                                player,
+                                selectedBlock
+                            );
+
+                    if (blockWasPlaced) {
+                        hotbar.consumeSelected();
+                    }
+                }
+            } else {
+                /*
+                 * Keep transition states synchronized while paused.
+                 * This prevents accidental actions immediately after resuming.
+                 */
+                previousJumpKeyDown =
+                        m_window.isKeyDown(Key::Space);
+
+                previousLeftMouseDown =
+                        m_window.isMouseButtonDown(
+                            MouseButton::Left
+                        );
+
+                previousRightMouseDown =
+                        m_window.isMouseButtonDown(
+                            MouseButton::Right
+                        );
+            }
+
+            /*
+             * Camera follows the player in either state.
+             */
+            const Vector3 &playerPosition =
+                    player.position();
+
+            camera.setPosition(
+                static_cast<float>(playerPosition.x),
+                static_cast<float>(playerPosition.y) + kPlayerEyeHeight,
+                static_cast<float>(playerPosition.z)
             );
 
-            // KEYBOARD INPUT
-            // Close with if Escape key is pressed
-            if (m_window.isKeyDown(Key::Escape)) {
-                m_window.requestClose();
-            }
+            const std::optional<BlockPosition> &targetedBlock =
+                    blockInteractor.targetedBlock();
 
-            const float movementDistance =
-                    kCameraSpeed * deltaTimeSeconds;
+            /*
+             * Debug-overlay data
+             */
+            const double frameTimeMilliseconds =
+                    deltaTime * 1'000.0;
 
-            if (m_window.isKeyDown(Key::W)) {
-                camera.moveForward(movementDistance);
-            }
+            const double framesPerSecond =
+                    deltaTime > 0.0
+                        ? 1.0 / deltaTime
+                        : 0.0;
 
-            if (m_window.isKeyDown(Key::S)) {
-                camera.moveForward(-movementDistance);
-            }
+            const DebugOverlayData debugData{
+                .framesPerSecond = framesPerSecond,
+                .frameTimeMilliseconds = frameTimeMilliseconds,
 
-            if (m_window.isKeyDown(Key::A)) {
-                camera.moveRight(-movementDistance);
-            }
+                .playerPosition = playerPosition,
 
-            if (m_window.isKeyDown(Key::D)) {
-                camera.moveRight(movementDistance);
-            }
+                .cameraYaw = camera.yaw(),
+                .cameraPitch = camera.pitch(),
 
-            if (m_window.isKeyDown(Key::Space)) {
-                camera.move(0.0f, movementDistance, 0.0f);
-            }
+                .selectedBlock = hotbar.selectedBlock(),
+                .targetedBlock = targetedBlock,
 
-            if (m_window.isKeyDown(Key::LeftShift)) {
-                camera.move(0.0f, -movementDistance, 0.0f);
-            }
+                .loadedChunkCount = loadedChunkCount
+            };
 
-            // FRAMEBUFFER AND PROJECTION
+            /*
+             * Framebuffer and projection
+             */
             const FrameBufferSize framebufferSize =
                     m_window.framebufferSize();
 
@@ -238,39 +551,140 @@ namespace bedrocked {
                 continue;
             }
 
-            m_renderer.setViewPort(framebufferSize.width,
-                                   framebufferSize.height);
+            imguiLayer.beginFrame();
+
+            m_renderer.setViewPort(
+                framebufferSize.width,
+                framebufferSize.height
+            );
 
             const float aspectRatio =
-                    static_cast<float>(framebufferSize.width) / static_cast<float>(framebufferSize.height);
+                    static_cast<float>(
+                        framebufferSize.width
+                    ) /
+                    static_cast<float>(
+                        framebufferSize.height
+                    );
 
-            const Matrix4 projection = Matrix4::perspective(kFieldOfView, aspectRatio, kNearClipPlane, kFarClipPlane);
+            const Matrix4 projection =
+                    Matrix4::perspective(
+                        kFieldOfView,
+                        aspectRatio,
+                        kNearClipPlane,
+                        kFarClipPlane
+                    );
 
-            const Matrix4 view = camera.viewMatrix();
+            const Matrix4 view =
+                    camera.viewMatrix();
 
-            // RENDERING
+            /*
+             * Render voxel world
+             */
             m_renderer.clear();
 
             glActiveTexture(GL_TEXTURE0);
             blockTexture.bind();
 
-            shader.use();
-            shader.setMat4("projection", projection.data());
-            shader.setMat4("view", view.data());
+            worldShader.use();
 
-            for (const RenderChunk &renderChunk: renderChunks) {
-                shader.setMat4("model", renderChunk.model.data());
+            worldShader.setMat4(
+                "projection",
+                projection.data()
+            );
 
-                m_renderer.draw(*renderChunk.mesh);
+            worldShader.setMat4(
+                "view",
+                view.data()
+            );
+
+            chunkRenderer.draw(
+                m_renderer,
+                worldShader
+            );
+
+            /*
+             * Render targeted-block outline
+             */
+            if (targetedBlock.has_value()) {
+                const BlockPosition &target =
+                        targetedBlock.value();
+
+                constexpr float outlineScale =
+                        1.002F;
+
+                const Matrix4 outlineModel =
+                        Matrix4::translation(
+                            static_cast<float>(target.x) + 0.5F,
+                            static_cast<float>(target.y) + 0.5F,
+                            static_cast<float>(target.z) + 0.5F
+                        ) *
+                        Matrix4::scale(
+                            outlineScale,
+                            outlineScale,
+                            outlineScale
+                        );
+
+                outlineShader.use();
+
+                outlineShader.setMat4(
+                    "projection",
+                    projection.data()
+                );
+
+                outlineShader.setMat4(
+                    "view",
+                    view.data()
+                );
+
+                outlineShader.setMat4(
+                    "model",
+                    outlineModel.data()
+                );
+
+                m_renderer.drawLines(
+                    selectionOutline
+                );
             }
 
+            /*
+             * Render UI in both Playing and Paused states.
+             */
+            crosshairUI.draw();
+            hotbarUI.draw(hotbar);
+
+            if (debugOverlayVisible) {
+                debugOverlay.draw(debugData);
+            }
+
+            if (gameState == GameState::Paused) {
+                const PauseMenuAction action =
+                        pauseMenu.draw();
+
+                if (action == PauseMenuAction::Resume) {
+                    gameState = GameState::Playing;
+
+                    m_window.setCursorCaptured(true);
+
+                    previousCursor =
+                            m_window.cursorPosition();
+                } else if (action == PauseMenuAction::Exit) {
+                    m_window.requestClose();
+                }
+            }
+
+            imguiLayer.endFrame();
             m_window.swapBuffers();
 
-            // PERFORMANCE STATS
-            statisticsElapsedTime += deltaTime;
+            /*
+             * Performance statistics
+             */
+            statisticsElapsedTime +=
+                    deltaTime;
+
             ++loopCount;
 
-            if (statisticsElapsedTime >= kStatisticsInterval) {
+            if (statisticsElapsedTime >=
+                kStatisticsInterval) {
                 const double loopsPerSecond =
                         static_cast<double>(loopCount) /
                         statisticsElapsedTime;
@@ -279,8 +693,10 @@ namespace bedrocked {
                         statisticsElapsedTime /
                         static_cast<double>(loopCount) *
                         1'000.0;
+
                 std::cout
-                        << "Loop rate: " << loopsPerSecond
+                        << "Loop rate: "
+                        << loopsPerSecond
                         << " iterations/s | Average loop time: "
                         << averageLoopTimeMilliseconds
                         << " ms\n";

@@ -8,7 +8,7 @@ namespace bedrocked {
 
         glBindBuffer(GL_ARRAY_BUFFER, m_id);
 
-        glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(sizeInBytes), data,GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(sizeInBytes), data, GL_STATIC_DRAW);
     }
 
     VertexBuffer::~VertexBuffer() {

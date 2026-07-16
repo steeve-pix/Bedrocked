@@ -39,4 +39,29 @@ namespace bedrocked {
         m_x += std::cos(m_yaw) * distance;
         m_z += std::sin(m_yaw) * distance;
     }
+
+    void Camera::setPosition(float x, float y, float z) noexcept {
+        m_x = x;
+        m_y = y;
+        m_z = z;
+    }
+
+    float Camera::yaw() const noexcept {
+        return m_yaw;
+    }
+
+    float Camera::pitch() const noexcept {
+        return m_pitch;
+    }
+
+    Vector3 Camera::forwardDirection() const noexcept {
+        const float horizontalLength =
+                std::cos(m_pitch);
+
+        return Vector3{
+            .x = -horizontalLength * std::sin(m_yaw),
+            .y = std::sin(m_pitch),
+            .z = -horizontalLength * std::cos(m_yaw)
+        };
+    }
 } // namespace bedrocked

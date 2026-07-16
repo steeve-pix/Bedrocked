@@ -14,8 +14,27 @@ namespace {
             case bedrocked::Key::D: return GLFW_KEY_D;
             case bedrocked::Key::Space: return GLFW_KEY_SPACE;
             case bedrocked::Key::LeftShift: return GLFW_KEY_LEFT_SHIFT;
+
+            case bedrocked::Key::Digit1: return GLFW_KEY_1;
+            case bedrocked::Key::Digit2: return GLFW_KEY_2;
+            case bedrocked::Key::Digit3: return GLFW_KEY_3;
+            case bedrocked::Key::Digit4: return GLFW_KEY_4;
+            case bedrocked::Key::Digit5: return GLFW_KEY_5;
+            case bedrocked::Key::F3: return GLFW_KEY_F3;
         }
         return GLFW_KEY_UNKNOWN;
+    }
+
+    [[nodiscard]] int toGlfwMouseButton(bedrocked::MouseButton button) noexcept {
+        switch (button) {
+            case bedrocked::MouseButton::Left:
+                return GLFW_MOUSE_BUTTON_LEFT;
+
+            case bedrocked::MouseButton::Right:
+                return GLFW_MOUSE_BUTTON_RIGHT;
+        }
+
+        return GLFW_MOUSE_BUTTON_LEFT;
     }
 } // Anonymouse helper
 
@@ -103,5 +122,13 @@ namespace bedrocked {
 
     void Window::setCursorCaptured(bool captured) noexcept {
         glfwSetInputMode(m_handle,GLFW_CURSOR, captured ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+    }
+
+    bool Window::isMouseButtonDown(MouseButton button) const noexcept {
+        return glfwGetMouseButton(m_handle, toGlfwMouseButton(button)) == GLFW_PRESS;
+    }
+
+    GLFWwindow *Window::nativeHandle() const noexcept {
+        return m_handle;
     }
 } // namespace bedrocked

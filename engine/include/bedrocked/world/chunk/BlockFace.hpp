@@ -9,4 +9,4 @@ namespace bedrocked {
         Top,
         Bottom
     };
-}// namespace bedrocked
+} // namespace bedrocked

@@ -2,6 +2,8 @@
 #include "../input/Key.hpp"
 #include <string>
 
+#include "bedrocked/input/MouseButton.hpp"
+
 struct GLFWwindow;
 
 namespace bedrocked {
@@ -46,6 +48,10 @@ namespace bedrocked {
         [[nodiscard]] CursorPosition cursorPosition() const noexcept;
 
         void setCursorCaptured(bool captured) noexcept;
+
+        [[nodiscard]] bool isMouseButtonDown(MouseButton button) const noexcept;
+
+        [[nodiscard]] GLFWwindow *nativeHandle() const noexcept;
 
     private:
         GLFWwindow *m_handle{nullptr};
