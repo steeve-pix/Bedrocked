@@ -4,7 +4,7 @@
 
 namespace bedrocked {
     Chunk &ChunkManager::createChunk(ChunkPosition position) {
-        assert(chunkAt(position)== nullptr);
+        assert(chunkAt(position) == nullptr);
 
         m_chunks.push_back({.position = position, .chunk = {}});
 

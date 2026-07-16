@@ -75,7 +75,7 @@ namespace bedrocked {
         }
 
         [[nodiscard]] constexpr Matrix4 operator*(const Matrix4 &other) const noexcept {
-            std::array<float, 16> result{};
+            std::array < float, 16 > result{};
             for (std::size_t column = 0; column < 4; ++column) {
                 for (std::size_t row = 0; row < 4; ++row) {
                     for (std::size_t index = 0; index < 4; ++index) {

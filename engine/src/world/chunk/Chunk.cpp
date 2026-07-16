@@ -16,7 +16,7 @@ namespace bedrocked {
     }
 
     void Chunk::setBlock(int x, int y, int z, BlockType type) noexcept {
-        assert(contains(x,y,z));
+        assert(contains(x, y, z));
         m_blocks[index(x, y, z)] = type;
     }
 }

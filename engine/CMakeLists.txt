@@ -30,6 +30,7 @@ add_library(bedrocked_engine STATIC
         src/ui/ImGuiLayer.cpp
         src/ui/HotbarUI.cpp
         src/rendering/ChunkRenderer.cpp
+        src/gameplay/BlockInteractor.cpp
 )
 
 #
@@ -37,7 +38,7 @@ add_library(Bedrocked::Engine ALIAS bedrocked_engine)
 
 target_compile_features(bedrocked_engine
         PUBLIC
-            cxx_std_20
+        cxx_std_20
 )
 
 target_include_directories(bedrocked_engine

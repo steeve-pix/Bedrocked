@@ -6,7 +6,6 @@
 #include <optional>
 
 namespace bedrocked {
-
     class World;
 
     struct BlockRaycastHit {
@@ -16,9 +15,8 @@ namespace bedrocked {
     };
 
     [[nodiscard]] std::optional<BlockRaycastHit> raycastBlocks(
-        const World& world,
+        const World &world,
         Vector3 origin,
         Vector3 direction,
         float maximumDistance) noexcept;
-
 } // namespace bedrocked
