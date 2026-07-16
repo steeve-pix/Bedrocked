@@ -28,6 +28,7 @@ add_library(bedrocked_engine STATIC
         src/gameplay/Player.cpp
         src/world/block/BlockRaycast.cpp
         src/ui/ImGuiLayer.cpp
+        src/ui/HotbarUI.cpp
 )
 
 #
