@@ -452,21 +452,33 @@ namespace bedrocked {
                         rightMouseDown;
 
                 if (leftMousePressed) {
-                    blockInteractor.destroyTargetedBlock(
+                    const std::optional<BlockType> destroyedBlock = blockInteractor.destroyTargetedBlock(
                         world,
                         chunkManager,
                         chunkRenderer
                     );
+                    if (destroyedBlock.has_value()) {
+                        hotbar.add(destroyedBlock.value());
+                    }
                 }
 
-                if (rightMousePressed) {
-                    blockInteractor.placeBlock(
-                        world,
-                        chunkManager,
-                        chunkRenderer,
-                        player,
-                        hotbar.selectedBlock()
-                    );
+                if (rightMousePressed &&
+                    hotbar.selectedQuantity() > 0) {
+                    const BlockType selectedBlock =
+                            hotbar.selectedBlock();
+
+                    const bool blockWasPlaced =
+                            blockInteractor.placeBlock(
+                                world,
+                                chunkManager,
+                                chunkRenderer,
+                                player,
+                                selectedBlock
+                            );
+
+                    if (blockWasPlaced) {
+                        hotbar.consumeSelected();
+                    }
                 }
             } else {
                 /*
@@ -494,9 +506,9 @@ namespace bedrocked {
                     player.position();
 
             camera.setPosition(
-                playerPosition.x,
-                playerPosition.y + kPlayerEyeHeight,
-                playerPosition.z
+                static_cast<float>(playerPosition.x),
+                static_cast<float>(playerPosition.y) + kPlayerEyeHeight,
+                static_cast<float>(playerPosition.z)
             );
 
             const std::optional<BlockPosition> &targetedBlock =

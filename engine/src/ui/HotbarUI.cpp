@@ -2,6 +2,7 @@
 
 #include "bedrocked/gameplay/Hotbar.hpp"
 #include "bedrocked/world/block/BlockType.hpp"
+#include "bedrocked/gameplay/InventorySlot.hpp"
 
 #include <cstddef>
 #include <cstdio>
@@ -38,7 +39,7 @@ namespace {
 namespace bedrocked {
     void HotbarUI::draw(const Hotbar &hotbar) const {
         constexpr float slotWidth = 78.0F;
-        constexpr float slotHeight = 58.0F;
+        constexpr float slotHeight = 70.0F;
         constexpr float slotSpacing = 6.0F;
         constexpr float windowPadding = 10.0F;
 
@@ -95,9 +96,12 @@ namespace bedrocked {
                 ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.85F, 0.65F, 0.15F, 1.0F});
             }
 
+            const InventorySlot &inventorySlot =
+                    hotbar.slotAt(slot);
+
             char label[32]{};
 
-            std::snprintf(label, sizeof(label), "%zu\n%s", slot + 1, blockName(hotbar.blockAt(slot)));
+            std::snprintf(label, sizeof(label), "%zu\n%s", slot + 1, blockName(inventorySlot.block));
 
             ImGui::Button(label, ImVec2{slotWidth, slotHeight});
 

@@ -3,6 +3,7 @@
 #include <array>
 #include <cstddef>
 
+#include "InventorySlot.hpp"
 #include "bedrocked/world/block/BlockType.hpp"
 
 namespace bedrocked {
@@ -21,20 +22,45 @@ namespace bedrocked {
         }
 
         [[nodiscard]] BlockType selectedBlock() const noexcept {
-            return m_blocks[m_selectedSlot];
+            return m_slots[m_selectedSlot].block;
         }
 
-        [[nodiscard]] BlockType blockAt(std::size_t slot) const noexcept {
-            return m_blocks[slot];
+        [[nodiscard]] const InventorySlot &slotAt(std::size_t slot) const noexcept {
+            return m_slots[slot];
+        }
+
+        [[nodiscard]] std::size_t selectedQuantity() const noexcept {
+            return m_slots[m_selectedSlot].quantity;
+        }
+
+        [[nodiscard]] bool consumeSelected() noexcept {
+            InventorySlot &slot =
+                    m_slots[m_selectedSlot];
+
+            if (slot.quantity == 0) {
+                return false;
+            }
+
+            --slot.quantity;
+            return true;
+        }
+
+        void add(BlockType type) noexcept {
+            for (InventorySlot &slot: m_slots) {
+                if (slot.block == type) {
+                    ++slot.quantity;
+                    return;
+                }
+            }
         }
 
     private:
-        std::array<BlockType, SlotCount> m_blocks{
-            BlockType::Grass,
-            BlockType::Dirt,
-            BlockType::Stone,
-            BlockType::Wood,
-            BlockType::Leaves,
+        std::array<InventorySlot, SlotCount> m_slots{
+            InventorySlot{BlockType::Grass, 20},
+            InventorySlot{BlockType::Dirt, 35},
+            InventorySlot{BlockType::Stone, 64},
+            InventorySlot{BlockType::Wood, 12},
+            InventorySlot{BlockType::Leaves, 18}
         };
 
         std::size_t m_selectedSlot{2};

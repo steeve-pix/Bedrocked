@@ -23,20 +23,14 @@ namespace bedrocked {
             Vector3 rayOrigin,
             Vector3 rayDirection) noexcept;
 
-        void destroyTargetedBlock(
-            World &world,
-            ChunkManager &chunkManager,
-            ChunkRenderer &chunkRenderer);
+        [[nodiscard]] std::optional<BlockType> destroyTargetedBlock(World &world, ChunkManager &chunkManager,
+                                                                    ChunkRenderer &chunkRenderer);
 
-        void placeBlock(
-            World &world,
-            ChunkManager &chunkManager,
-            ChunkRenderer &chunkRenderer,
-            const Player &player,
-            BlockType type);
+        [[nodiscard]] bool placeBlock(World &world, ChunkManager &chunkManager, ChunkRenderer &chunkRenderer,
+                                      const Player &player,
+                                      BlockType type);
 
-        [[nodiscard]] const std::optional<BlockPosition> &
-        targetedBlock() const noexcept;
+        [[nodiscard]] const std::optional<BlockPosition> &targetedBlock() const noexcept;
 
     private:
         float m_reach;
