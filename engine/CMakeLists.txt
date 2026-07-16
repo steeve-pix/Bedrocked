@@ -29,6 +29,7 @@ add_library(bedrocked_engine STATIC
         src/world/block/BlockRaycast.cpp
         src/ui/ImGuiLayer.cpp
         src/ui/HotbarUI.cpp
+        src/rendering/ChunkRenderer.cpp
 )
 
 #
