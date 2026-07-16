@@ -30,6 +30,7 @@
 #include <glad/glad.h>
 
 #include "bedrocked/gameplay/BlockInteractor.hpp"
+#include "bedrocked/ui/CrosshairUI.hpp"
 
 namespace bedrocked {
     namespace {
@@ -189,6 +190,8 @@ namespace bedrocked {
 
         ChunkManager &chunkManager =
                 world.chunks();
+
+        CrosshairUI crosshairUI;
 
         ChunkRenderer chunkRenderer;
         chunkRenderer.build(chunkManager);
@@ -503,6 +506,7 @@ namespace bedrocked {
             /*
              * Render UI
              */
+            crosshairUI.draw();
             hotbarUI.draw(hotbar);
             imguiLayer.endFrame();
 

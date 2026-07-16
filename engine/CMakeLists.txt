@@ -31,6 +31,7 @@ add_library(bedrocked_engine STATIC
         src/ui/HotbarUI.cpp
         src/rendering/ChunkRenderer.cpp
         src/gameplay/BlockInteractor.cpp
+        src/ui/CrosshairUI.cpp
 )
 
 #
