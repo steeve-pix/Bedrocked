@@ -38,13 +38,28 @@ namespace bedrocked {
         return m_targetedBlock;
     }
 
-    void BlockInteractor::destroyTargetedBlock(World &world, ChunkManager &chunkManager, ChunkRenderer &chunkRenderer) {
+    std::optional<BlockType>
+    BlockInteractor::destroyTargetedBlock(
+        World &world,
+        ChunkManager &chunkManager,
+        ChunkRenderer &chunkRenderer) {
         if (!m_targetedBlock.has_value()) {
-            return;
+            return std::nullopt;
         }
 
         const BlockPosition block =
                 m_targetedBlock.value();
+
+        const BlockType destroyedType =
+                world.blockAtWorld(
+                    block.x,
+                    block.y,
+                    block.z
+                );
+
+        if (destroyedType == BlockType::Air) {
+            return std::nullopt;
+        }
 
         world.setBlockAtWorld(
             block.x,
@@ -60,12 +75,14 @@ namespace bedrocked {
 
         m_targetedBlock.reset();
         m_adjacentBlock.reset();
+
+        return destroyedType;
     }
 
-    void BlockInteractor::placeBlock(World &world, ChunkManager &chunkManager, ChunkRenderer &chunkRenderer,
+    bool BlockInteractor::placeBlock(World &world, ChunkManager &chunkManager, ChunkRenderer &chunkRenderer,
                                      const Player &player, BlockType type) {
         if (!m_adjacentBlock.has_value()) {
-            return;
+            return false;
         }
 
         const BlockPosition block =
@@ -75,11 +92,11 @@ namespace bedrocked {
                 block.x,
                 block.y,
                 block.z) != BlockType::Air) {
-            return;
+            return false;
         }
 
         if (player.intersectsBlock(block)) {
-            return;
+            return false;
         }
 
         world.setBlockAtWorld(
@@ -93,5 +110,6 @@ namespace bedrocked {
             chunkManager,
             block
         );
+        return true;
     }
 } // namespace bedrocked
