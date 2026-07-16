@@ -17,20 +17,19 @@
 #include "bedrocked/ui/ImGuiLayer.hpp"
 #include "bedrocked/world/World.hpp"
 #include "bedrocked/world/block/BlockPosition.hpp"
-#include "bedrocked/world/block/BlockRaycast.hpp"
-#include "bedrocked/world/block/BlockType.hpp"
 #include "bedrocked/world/chunk/ChunkManager.hpp"
+#include "bedrocked/gameplay/BlockInteractor.hpp"
+#include "bedrocked/ui/CrosshairUI.hpp"
+#include "bedrocked/ui/DebugOverlay.hpp"
 
 #include <cstdint>
 #include <iostream>
 #include <iterator>
 #include <optional>
 #include <string_view>
+#include <cstddef>
 
 #include <glad/glad.h>
-
-#include "bedrocked/gameplay/BlockInteractor.hpp"
-#include "bedrocked/ui/CrosshairUI.hpp"
 
 namespace bedrocked {
     namespace {
@@ -191,10 +190,11 @@ namespace bedrocked {
         ChunkManager &chunkManager =
                 world.chunks();
 
-        CrosshairUI crosshairUI;
-
         ChunkRenderer chunkRenderer;
         chunkRenderer.build(chunkManager);
+
+        const std::size_t loadedChunkCount =
+                chunkManager.positions().size();
 
         Mesh selectionOutline{
             kOutlineVertices, std::size(kOutlineVertices), kOutlineIndices, std::size(kOutlineIndices)
@@ -211,6 +211,8 @@ namespace bedrocked {
         Camera camera;
         Hotbar hotbar;
         HotbarUI hotbarUI;
+        CrosshairUI crosshairUI;
+        DebugOverlay debugOverlay;
 
         ImGuiLayer imguiLayer{m_window.nativeHandle()};
 
@@ -239,7 +241,7 @@ namespace bedrocked {
         while (!m_window.shouldClose()) {
             const double deltaTime = m_timer.tick();
 
-            const float deltaTimeSeconds =
+            const auto deltaTimeSeconds =
                     static_cast<float>(deltaTime);
 
             m_window.pollEvents();
@@ -365,9 +367,9 @@ namespace bedrocked {
                     player.position();
 
             camera.setPosition(
-                playerPosition.x,
-                playerPosition.y + kPlayerEyeHeight,
-                playerPosition.z
+                static_cast<float>(playerPosition.x),
+                static_cast<float>(playerPosition.y) + kPlayerEyeHeight,
+                static_cast<float>(playerPosition.z)
             );
 
             /*
@@ -401,6 +403,32 @@ namespace bedrocked {
 
             const std::optional<BlockPosition> &targetedBlock =
                     blockInteractor.targetedBlock();
+
+            /*
+             * Debug-overlay data
+             */
+            const double frameTimeMilliseconds =
+                    deltaTime * 1'000.0;
+
+            const double framesPerSecond =
+                    deltaTime > 0.0
+                        ? 1.0 / deltaTime
+                        : 0.0;
+
+            const DebugOverlayData debugData{
+                .framesPerSecond = framesPerSecond,
+                .frameTimeMilliseconds = frameTimeMilliseconds,
+
+                .playerPosition = playerPosition,
+
+                .cameraYaw = camera.yaw(),
+                .cameraPitch = camera.pitch(),
+
+                .selectedBlock = hotbar.selectedBlock(),
+                .targetedBlock = targetedBlock,
+
+                .loadedChunkCount = loadedChunkCount
+            };
 
             /*
              * Framebuffer and projection
@@ -508,6 +536,8 @@ namespace bedrocked {
              */
             crosshairUI.draw();
             hotbarUI.draw(hotbar);
+            debugOverlay.draw(debugData);
+
             imguiLayer.endFrame();
 
             m_window.swapBuffers();
