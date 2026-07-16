@@ -31,6 +31,9 @@
 
 #include <glad/glad.h>
 
+#include "bedrocked/gameplay/GameState.hpp"
+#include "bedrocked/ui/PauseMenu.hpp"
+
 namespace bedrocked {
     namespace {
         constexpr float kPi = 3.14159265358979323846F;
@@ -218,11 +221,6 @@ namespace bedrocked {
 
         m_renderer.setClearColor(0.1F, 0.2F, 0.3F, 1.0F);
 
-        m_window.setCursorCaptured(true);
-
-        CursorPosition previousCursor =
-                m_window.cursorPosition();
-
         worldShader.use();
         worldShader.setInt("blockTexture", 0);
 
@@ -231,89 +229,63 @@ namespace bedrocked {
             kInteractionReach
         };
 
+        GameState gameState = GameState::Playing;
+
+        PauseMenu pauseMenu;
+
+        bool previousEscapeKeyDown{};
         bool previousLeftMouseDown{};
         bool previousRightMouseDown{};
         bool previousJumpKeyDown{};
+        bool previousF3KeyDown{};
 
         double statisticsElapsedTime{};
         int loopCount{};
 
         bool debugOverlayVisible{true};
-        bool previousF3KeyDown{};
+
+        m_window.setCursorCaptured(true);
+
+        CursorPosition previousCursor =
+                m_window.cursorPosition();
 
         while (!m_window.shouldClose()) {
             const double deltaTime = m_timer.tick();
 
-            const auto deltaTimeSeconds =
-                    static_cast<float>(deltaTime);
+            const auto deltaTimeSeconds = static_cast<float>(deltaTime);
 
             m_window.pollEvents();
 
-            const bool leftMouseDown =
-                    m_window.isMouseButtonDown(MouseButton::Left);
-
-            const bool leftMousePressed =
-                    leftMouseDown && !previousLeftMouseDown;
-
-            previousLeftMouseDown = leftMouseDown;
-
-            const bool rightMouseDown =
-                    m_window.isMouseButtonDown(MouseButton::Right);
-
-            const bool rightMousePressed =
-                    rightMouseDown && !previousRightMouseDown;
-
-            previousRightMouseDown = rightMouseDown;
-
             /*
-             * Camera orientation
+             * Pause toggle
              */
-            const CursorPosition currentCursor =
-                    m_window.cursorPosition();
+            const bool escapeKeyDown =
+                    m_window.isKeyDown(Key::Escape);
 
-            const double mouseDeltaX =
-                    currentCursor.x - previousCursor.x;
+            const bool escapeKeyPressed =
+                    escapeKeyDown &&
+                    !previousEscapeKeyDown;
 
-            const double mouseDeltaY =
-                    previousCursor.y - currentCursor.y;
+            previousEscapeKeyDown =
+                    escapeKeyDown;
 
-            previousCursor = currentCursor;
+            if (escapeKeyPressed) {
+                if (gameState == GameState::Playing) {
+                    gameState = GameState::Paused;
+                    m_window.setCursorCaptured(false);
+                } else {
+                    gameState = GameState::Playing;
+                    m_window.setCursorCaptured(true);
 
-            camera.rotate(
-                -static_cast<float>(mouseDeltaX) *
-                kMouseSensitivity,
-
-                static_cast<float>(mouseDeltaY) *
-                kMouseSensitivity
-            );
-
-            if (m_window.isKeyDown(Key::Escape)) {
-                m_window.requestClose();
+                    // Prevent a large camera movement after recapturing.
+                    previousCursor =
+                            m_window.cursorPosition();
+                }
             }
 
             /*
-             * Hotbar selection
+             * Debug-overlay toggle
              */
-            if (m_window.isKeyDown(Key::Digit1)) {
-                hotbar.select(0);
-            }
-
-            if (m_window.isKeyDown(Key::Digit2)) {
-                hotbar.select(1);
-            }
-
-            if (m_window.isKeyDown(Key::Digit3)) {
-                hotbar.select(2);
-            }
-
-            if (m_window.isKeyDown(Key::Digit4)) {
-                hotbar.select(3);
-            }
-
-            if (m_window.isKeyDown(Key::Digit5)) {
-                hotbar.select(4);
-            }
-
             const bool f3KeyDown =
                     m_window.isKeyDown(Key::F3);
 
@@ -327,95 +299,205 @@ namespace bedrocked {
                         !debugOverlayVisible;
             }
 
+            const bool playing =
+                    gameState == GameState::Playing;
+
+            if (playing) {
+                /*
+                 * Mouse-look
+                 */
+                const CursorPosition currentCursor =
+                        m_window.cursorPosition();
+
+                const double mouseDeltaX =
+                        currentCursor.x -
+                        previousCursor.x;
+
+                const double mouseDeltaY =
+                        previousCursor.y -
+                        currentCursor.y;
+
+                previousCursor =
+                        currentCursor;
+
+                camera.rotate(
+                    -static_cast<float>(mouseDeltaX) *
+                    kMouseSensitivity,
+
+                    static_cast<float>(mouseDeltaY) *
+                    kMouseSensitivity
+                );
+
+                /*
+                 * Hotbar selection
+                 */
+                if (m_window.isKeyDown(Key::Digit1)) {
+                    hotbar.select(0);
+                }
+
+                if (m_window.isKeyDown(Key::Digit2)) {
+                    hotbar.select(1);
+                }
+
+                if (m_window.isKeyDown(Key::Digit3)) {
+                    hotbar.select(2);
+                }
+
+                if (m_window.isKeyDown(Key::Digit4)) {
+                    hotbar.select(3);
+                }
+
+                if (m_window.isKeyDown(Key::Digit5)) {
+                    hotbar.select(4);
+                }
+
+                /*
+                 * Player movement
+                 */
+                float forwardInput{};
+                float rightInput{};
+
+                if (m_window.isKeyDown(Key::W)) {
+                    forwardInput += 1.0F;
+                }
+
+                if (m_window.isKeyDown(Key::S)) {
+                    forwardInput -= 1.0F;
+                }
+
+                if (m_window.isKeyDown(Key::D)) {
+                    rightInput += 1.0F;
+                }
+
+                if (m_window.isKeyDown(Key::A)) {
+                    rightInput -= 1.0F;
+                }
+
+                player.move(
+                    forwardInput,
+                    rightInput,
+                    camera.yaw(),
+                    kPlayerSpeed
+                );
+
+                /*
+                 * Jumping
+                 */
+                const bool jumpKeyDown =
+                        m_window.isKeyDown(Key::Space);
+
+                const bool jumpKeyPressed =
+                        jumpKeyDown &&
+                        !previousJumpKeyDown;
+
+                previousJumpKeyDown =
+                        jumpKeyDown;
+
+                if (jumpKeyPressed) {
+                    player.jump(kJumpVelocity);
+                }
+
+                /*
+                 * Gravity and collision
+                 */
+                player.update(
+                    deltaTimeSeconds,
+                    world
+                );
+
+                /*
+                 * Block targeting
+                 */
+                const Vector3 &currentPlayerPosition =
+                        player.position();
+
+                const Vector3 rayOrigin{
+                    .x = currentPlayerPosition.x,
+                    .y = currentPlayerPosition.y +
+                         kPlayerEyeHeight,
+                    .z = currentPlayerPosition.z
+                };
+
+                blockInteractor.updateTarget(
+                    world,
+                    rayOrigin,
+                    camera.forwardDirection()
+                );
+
+                /*
+                 * Mouse-button press detection
+                 */
+                const bool leftMouseDown =
+                        m_window.isMouseButtonDown(
+                            MouseButton::Left
+                        );
+
+                const bool leftMousePressed =
+                        leftMouseDown &&
+                        !previousLeftMouseDown;
+
+                previousLeftMouseDown =
+                        leftMouseDown;
+
+                const bool rightMouseDown =
+                        m_window.isMouseButtonDown(
+                            MouseButton::Right
+                        );
+
+                const bool rightMousePressed =
+                        rightMouseDown &&
+                        !previousRightMouseDown;
+
+                previousRightMouseDown =
+                        rightMouseDown;
+
+                if (leftMousePressed) {
+                    blockInteractor.destroyTargetedBlock(
+                        world,
+                        chunkManager,
+                        chunkRenderer
+                    );
+                }
+
+                if (rightMousePressed) {
+                    blockInteractor.placeBlock(
+                        world,
+                        chunkManager,
+                        chunkRenderer,
+                        player,
+                        hotbar.selectedBlock()
+                    );
+                }
+            } else {
+                /*
+                 * Keep transition states synchronized while paused.
+                 * This prevents accidental actions immediately after resuming.
+                 */
+                previousJumpKeyDown =
+                        m_window.isKeyDown(Key::Space);
+
+                previousLeftMouseDown =
+                        m_window.isMouseButtonDown(
+                            MouseButton::Left
+                        );
+
+                previousRightMouseDown =
+                        m_window.isMouseButtonDown(
+                            MouseButton::Right
+                        );
+            }
+
             /*
-             * Player movement
-             */
-            float forwardInput{};
-            float rightInput{};
-
-            if (m_window.isKeyDown(Key::W)) {
-                forwardInput += 1.0F;
-            }
-
-            if (m_window.isKeyDown(Key::S)) {
-                forwardInput -= 1.0F;
-            }
-
-            if (m_window.isKeyDown(Key::D)) {
-                rightInput += 1.0F;
-            }
-
-            if (m_window.isKeyDown(Key::A)) {
-                rightInput -= 1.0F;
-            }
-
-            player.move(
-                forwardInput,
-                rightInput,
-                camera.yaw(),
-                kPlayerSpeed
-            );
-
-            /*
-             * Jump press detection
-             */
-            const bool jumpKeyDown =
-                    m_window.isKeyDown(Key::Space);
-
-            const bool jumpKeyPressed =
-                    jumpKeyDown && !previousJumpKeyDown;
-
-            previousJumpKeyDown = jumpKeyDown;
-
-            if (jumpKeyPressed) {
-                player.jump(kJumpVelocity);
-            }
-
-            player.update(
-                deltaTimeSeconds,
-                world
-            );
-
-            /*
-             * Camera follows the player
+             * Camera follows the player in either state.
              */
             const Vector3 &playerPosition =
                     player.position();
 
             camera.setPosition(
-                static_cast<float>(playerPosition.x),
-                static_cast<float>(playerPosition.y) + kPlayerEyeHeight,
-                static_cast<float>(playerPosition.z)
+                playerPosition.x,
+                playerPosition.y + kPlayerEyeHeight,
+                playerPosition.z
             );
-
-            /*
-             * Block targeting
-             */
-            const Vector3 rayOrigin{
-                .x = playerPosition.x,
-                .y = playerPosition.y + kPlayerEyeHeight,
-                .z = playerPosition.z
-            };
-
-            blockInteractor.updateTarget(world, rayOrigin, camera.forwardDirection());
-
-            if (leftMousePressed) {
-                blockInteractor.destroyTargetedBlock(
-                    world,
-                    chunkManager,
-                    chunkRenderer
-                );
-            }
-
-            if (rightMousePressed) {
-                blockInteractor.placeBlock(
-                    world,
-                    chunkManager,
-                    chunkRenderer,
-                    player,
-                    hotbar.selectedBlock()
-                );
-            }
 
             const std::optional<BlockPosition> &targetedBlock =
                     blockInteractor.targetedBlock();
@@ -465,8 +547,12 @@ namespace bedrocked {
             );
 
             const float aspectRatio =
-                    static_cast<float>(framebufferSize.width) /
-                    static_cast<float>(framebufferSize.height);
+                    static_cast<float>(
+                        framebufferSize.width
+                    ) /
+                    static_cast<float>(
+                        framebufferSize.height
+                    );
 
             const Matrix4 projection =
                     Matrix4::perspective(
@@ -511,7 +597,8 @@ namespace bedrocked {
                 const BlockPosition &target =
                         targetedBlock.value();
 
-                constexpr float outlineScale = 1.002F;
+                constexpr float outlineScale =
+                        1.002F;
 
                 const Matrix4 outlineModel =
                         Matrix4::translation(
@@ -548,22 +635,40 @@ namespace bedrocked {
             }
 
             /*
-             * Render UI
+             * Render UI in both Playing and Paused states.
              */
             crosshairUI.draw();
             hotbarUI.draw(hotbar);
+
             if (debugOverlayVisible) {
                 debugOverlay.draw(debugData);
             }
 
-            imguiLayer.endFrame();
+            if (gameState == GameState::Paused) {
+                const PauseMenuAction action =
+                        pauseMenu.draw();
 
+                if (action == PauseMenuAction::Resume) {
+                    gameState = GameState::Playing;
+
+                    m_window.setCursorCaptured(true);
+
+                    previousCursor =
+                            m_window.cursorPosition();
+                } else if (action == PauseMenuAction::Exit) {
+                    m_window.requestClose();
+                }
+            }
+
+            imguiLayer.endFrame();
             m_window.swapBuffers();
 
             /*
              * Performance statistics
              */
-            statisticsElapsedTime += deltaTime;
+            statisticsElapsedTime +=
+                    deltaTime;
+
             ++loopCount;
 
             if (statisticsElapsedTime >=
