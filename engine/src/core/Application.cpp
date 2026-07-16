@@ -2,53 +2,51 @@
 
 #include "bedrocked/assets/Image.hpp"
 #include "bedrocked/core/Logger.hpp"
+#include "bedrocked/gameplay/Hotbar.hpp"
 #include "bedrocked/gameplay/Player.hpp"
 #include "bedrocked/input/Key.hpp"
+#include "bedrocked/input/MouseButton.hpp"
 #include "bedrocked/math/Matrix4.hpp"
 #include "bedrocked/math/Vector3.hpp"
 #include "bedrocked/rendering/Camera.hpp"
+#include "bedrocked/rendering/ChunkRenderer.hpp"
 #include "bedrocked/rendering/Mesh.hpp"
 #include "bedrocked/rendering/opengl/ShaderProgram.hpp"
 #include "bedrocked/rendering/opengl/Texture2D.hpp"
-#include "bedrocked/world/World.hpp"
-#include "bedrocked/world/chunk/ChunkManager.hpp"
-#include "bedrocked/world/chunk/ChunkMesher.hpp"
-#include "bedrocked/world/chunk/ChunkTransforms.hpp"
-#include "bedrocked/world/block/BlockPosition.hpp"
-#include "bedrocked/world/block/BlockRaycast.hpp"
-#include "bedrocked/gameplay/Hotbar.hpp"
-#include "bedrocked/world/chunk/ChunkCoordinates.hpp"
-
-#include <iostream>
-#include <memory>
-#include <string_view>
-#include <vector>
-#include <array>
-#include <cstdio>
-
-
-#include <imgui.h>
-#include <glad/glad.h>
-
 #include "bedrocked/ui/HotbarUI.hpp"
 #include "bedrocked/ui/ImGuiLayer.hpp"
+#include "bedrocked/world/World.hpp"
+#include "bedrocked/world/block/BlockPosition.hpp"
+#include "bedrocked/world/block/BlockRaycast.hpp"
+#include "bedrocked/world/block/BlockType.hpp"
+#include "bedrocked/world/chunk/ChunkManager.hpp"
 
+#include <cstdint>
+#include <iostream>
+#include <iterator>
+#include <optional>
+#include <string_view>
+
+#include <glad/glad.h>
 
 namespace bedrocked {
     namespace {
-        // RENDERING CONFIG
         constexpr float kPi = 3.14159265358979323846F;
-        constexpr float kFieldOfView = 60.0f * kPi / 180.0f;
 
-        constexpr float kNearClipPlane = 0.1f;
-        constexpr float kFarClipPlane = 100.0f;
+        constexpr float kFieldOfView =
+                60.0F * kPi / 180.0F;
 
-        constexpr float kMouseSensitivity = 0.002f;
-        constexpr float kPlayerEyeHeight = 1.62f;
+        constexpr float kNearClipPlane = 0.1F;
+        constexpr float kFarClipPlane = 100.0F;
+
+        constexpr float kMouseSensitivity = 0.002F;
+        constexpr float kPlayerEyeHeight = 1.62F;
+        constexpr float kPlayerSpeed = 4.0F;
+        constexpr float kJumpVelocity = 8.0F;
+        constexpr float kInteractionReach = 5.0F;
 
         constexpr double kStatisticsInterval = 10.0;
 
-        // SHADERS
         constexpr std::string_view kVertexShaderSource = R"(
             #version 330 core
 
@@ -124,23 +122,18 @@ namespace bedrocked {
             }
         )";
 
-        struct RenderChunk {
-            ChunkPosition position;
-            Matrix4 model;
-            std::unique_ptr<Mesh> mesh;
-        };
-
         constexpr Vertex kOutlineVertices[]{
-            {{-0.5F, -0.5F, 0.5F}, {1.0F, 1.0F, 0.0F}, {0.0F, 0.0F}}, // 0
-            {{0.5F, -0.5F, 0.5F}, {1.0F, 1.0F, 0.0F}, {0.0F, 0.0F}}, // 1
-            {{0.5F, 0.5F, 0.5F}, {1.0F, 1.0F, 0.0F}, {0.0F, 0.0F}}, // 2
-            {{-0.5F, 0.5F, 0.5F}, {1.0F, 1.0F, 0.0F}, {0.0F, 0.0F}}, // 3
+            {{-0.5F, -0.5F, 0.5F}, {1.0F, 1.0F, 0.0F}, {0.0F, 0.0F}},
+            {{0.5F, -0.5F, 0.5F}, {1.0F, 1.0F, 0.0F}, {0.0F, 0.0F}},
+            {{0.5F, 0.5F, 0.5F}, {1.0F, 1.0F, 0.0F}, {0.0F, 0.0F}},
+            {{-0.5F, 0.5F, 0.5F}, {1.0F, 1.0F, 0.0F}, {0.0F, 0.0F}},
 
-            {{-0.5F, -0.5F, -0.5F}, {1.0F, 1.0F, 0.0F}, {0.0F, 0.0F}}, // 4
-            {{0.5F, -0.5F, -0.5F}, {1.0F, 1.0F, 0.0F}, {0.0F, 0.0F}}, // 5
-            {{0.5F, 0.5F, -0.5F}, {1.0F, 1.0F, 0.0F}, {0.0F, 0.0F}}, // 6
-            {{-0.5F, 0.5F, -0.5F}, {1.0F, 1.0F, 0.0F}, {0.0F, 0.0F}} // 7
+            {{-0.5F, -0.5F, -0.5F}, {1.0F, 1.0F, 0.0F}, {0.0F, 0.0F}},
+            {{0.5F, -0.5F, -0.5F}, {1.0F, 1.0F, 0.0F}, {0.0F, 0.0F}},
+            {{0.5F, 0.5F, -0.5F}, {1.0F, 1.0F, 0.0F}, {0.0F, 0.0F}},
+            {{-0.5F, 0.5F, -0.5F}, {1.0F, 1.0F, 0.0F}, {0.0F, 0.0F}}
         };
+
         constexpr std::uint32_t kOutlineIndices[]{
             // Front
             0, 1,
@@ -169,12 +162,19 @@ namespace bedrocked {
     int Application::run() {
         Logger::info("Bedrocked starting...");
 
-        ShaderProgram shader{
+        ShaderProgram worldShader{
             kVertexShaderSource,
             kFragmentShaderSource
         };
 
-        Image blockImage{"assets/textures/block_atlas.png"};
+        ShaderProgram outlineShader{
+            kOutlineVertexShaderSource,
+            kOutlineFragmentShaderSource
+        };
+
+        Image blockImage{
+            "assets/textures/block_atlas.png"
+        };
 
         Texture2D blockTexture{
             blockImage.width(),
@@ -182,61 +182,19 @@ namespace bedrocked {
             blockImage.pixels()
         };
 
-        /*
-         * Generate the world before building the GPU meshes.
-         */
         World world{1234U};
         world.generateTestWorld();
 
-        ChunkManager &chunkManager = world.chunks();
+        ChunkManager &chunkManager =
+                world.chunks();
 
-        const std::vector<ChunkPosition> positions =
-                chunkManager.positions();
+        ChunkRenderer chunkRenderer;
+        chunkRenderer.build(chunkManager);
 
-        /*
-         * Every chunk has its own mesh and model matrix.
-         *
-         * There is deliberately no visual scene offset anymore.
-         * Rendering and physics now use the same world coordinates.
-         */
-        std::vector<RenderChunk> renderChunks;
-        renderChunks.reserve(positions.size());
+        Mesh selectionOutline{
+            kOutlineVertices, std::size(kOutlineVertices), kOutlineIndices, std::size(kOutlineIndices)
+        };
 
-        for (const ChunkPosition position: positions) {
-            Chunk *chunk = chunkManager.chunkAt(position);
-
-            if (chunk == nullptr) {
-                continue;
-            }
-
-            const ChunkNeighbors neighbors =
-                    chunkManager.neighborsOf(position);
-
-            const ChunkMeshData meshData =
-                    buildChunkMeshData(*chunk, neighbors);
-
-            if (meshData.empty()) {
-                continue;
-            }
-
-            auto mesh = std::make_unique<Mesh>(
-                meshData.vertices.data(),
-                meshData.vertices.size(),
-                meshData.indices.data(),
-                meshData.indices.size()
-            );
-
-            renderChunks.push_back({
-                .position = position,
-                .model = chunkModelMatrix(position),
-                .mesh = std::move(mesh)
-            });
-        }
-
-        /*
-         * Player position represents the center of the player’s feet.
-         * Starting at Y = 15 lets gravity drop the player onto terrain.
-         */
         Player player{
             Vector3{
                 .x = 0.5F,
@@ -246,6 +204,10 @@ namespace bedrocked {
         };
 
         Camera camera;
+        Hotbar hotbar;
+        HotbarUI hotbarUI;
+
+        ImGuiLayer imguiLayer{m_window.nativeHandle()};
 
         m_renderer.setClearColor(0.1F, 0.2F, 0.3F, 1.0F);
 
@@ -254,100 +216,30 @@ namespace bedrocked {
         CursorPosition previousCursor =
                 m_window.cursorPosition();
 
-        shader.use();
-        shader.setInt("blockTexture", 0);
+        worldShader.use();
+        worldShader.setInt("blockTexture", 0);
+
+        std::optional<BlockPosition> previousTarget;
+
+        bool previousLeftMouseDown{};
+        bool previousRightMouseDown{};
+        bool previousJumpKeyDown{};
 
         double statisticsElapsedTime{};
         int loopCount{};
 
-        std::optional<BlockPosition> previousTarget;
-        bool previousLeftMouseDown{};
-        bool previousRightMouseDown{};
-
-        const auto rebuildChunkMesh = [&chunkManager, &renderChunks](ChunkPosition position) {
-            Chunk *chunk =
-                    chunkManager.chunkAt(position);
-
-            if (chunk == nullptr) {
-                return;
-            }
-
-            const ChunkNeighbors neighbors =
-                    chunkManager.neighborsOf(position);
-
-            const ChunkMeshData meshData =
-                    buildChunkMeshData(*chunk, neighbors);
-
-            for (RenderChunk &renderChunk: renderChunks) {
-                if (renderChunk.position != position) {
-                    continue;
-                }
-
-                if (meshData.empty()) {
-                    renderChunk.mesh.reset();
-                    return;
-                }
-
-                renderChunk.mesh =
-                        std::make_unique<Mesh>(
-                            meshData.vertices.data(),
-                            meshData.vertices.size(),
-                            meshData.indices.data(),
-                            meshData.indices.size()
-                        );
-
-                return;
-            }
-        };
-        const auto rebuildAroundBlock = [&rebuildChunkMesh](BlockPosition block) {
-            const ChunkPosition owningChunk =
-                    chunkPositionForBlock(block);
-
-            constexpr std::array offsets{
-                ChunkPosition{0, 0, 0},
-                ChunkPosition{1, 0, 0},
-                ChunkPosition{-1, 0, 0},
-                ChunkPosition{0, 1, 0},
-                ChunkPosition{0, -1, 0},
-                ChunkPosition{0, 0, 1},
-                ChunkPosition{0, 0, -1}
-            };
-
-            for (const ChunkPosition offset: offsets) {
-                rebuildChunkMesh({
-                    .x = owningChunk.x + offset.x,
-                    .y = owningChunk.y + offset.y,
-                    .z = owningChunk.z + offset.z
-                });
-            }
-        };
-
-        Mesh selectionOutline{
-            kOutlineVertices, std::size(kOutlineVertices), kOutlineIndices, std::size(kOutlineIndices)
-        };
-
-        ShaderProgram outlineShader{
-            kOutlineVertexShaderSource,
-            kOutlineFragmentShaderSource
-        };
-
-        ImGuiLayer imguiLayer{
-            m_window.nativeHandle()
-        };
-
-        bool previousJumpKeyDown{}; 
-
-
-        Hotbar hotbar;
-        HotbarUI hotbarUI;
-
         while (!m_window.shouldClose()) {
-            const double deltaTime = m_timer.tick();
+            const double deltaTime =
+                    m_timer.tick();
+
             const float deltaTimeSeconds =
                     static_cast<float>(deltaTime);
 
             m_window.pollEvents();
 
+            /*
+             * Mouse-button edge detection.
+             */
             const bool leftMouseDown =
                     m_window.isMouseButtonDown(MouseButton::Left);
 
@@ -355,10 +247,6 @@ namespace bedrocked {
                     leftMouseDown && !previousLeftMouseDown;
 
             previousLeftMouseDown = leftMouseDown;
-
-            if (leftMousePressed) {
-                std::cout << "Left mouse clicked\n";
-            }
 
             const bool rightMouseDown =
                     m_window.isMouseButtonDown(MouseButton::Right);
@@ -369,8 +257,7 @@ namespace bedrocked {
             previousRightMouseDown = rightMouseDown;
 
             /*
-             * Mouse input controls only camera orientation.
-             * Camera position will come from the Player.
+             * Camera orientation.
              */
             const CursorPosition currentCursor =
                     m_window.cursorPosition();
@@ -388,30 +275,13 @@ namespace bedrocked {
                 static_cast<float>(mouseDeltaY) * kMouseSensitivity
             );
 
-            // KEYBOARD INPUT
-            // Close with if Escape key is pressed
             if (m_window.isKeyDown(Key::Escape)) {
                 m_window.requestClose();
             }
 
-            float forwardInput{};
-            float rightInput{};
-
-            if (m_window.isKeyDown(Key::W)) {
-                forwardInput += 1.0f;
-            }
-            if (m_window.isKeyDown(Key::S)) {
-                forwardInput -= 1.0F;
-            }
-
-            if (m_window.isKeyDown(Key::D)) {
-                rightInput += 1.0F;
-            }
-
-            if (m_window.isKeyDown(Key::A)) {
-                rightInput -= 1.0F;
-            }
-
+            /*
+             * Hotbar selection.
+             */
             if (m_window.isKeyDown(Key::Digit1)) {
                 hotbar.select(0);
             }
@@ -432,9 +302,38 @@ namespace bedrocked {
                 hotbar.select(4);
             }
 
-            constexpr float playerSpeed = 4.0F;
-            player.move(forwardInput, rightInput, camera.yaw(), playerSpeed);
+            /*
+             * Player movement input.
+             */
+            float forwardInput{};
+            float rightInput{};
 
+            if (m_window.isKeyDown(Key::W)) {
+                forwardInput += 1.0F;
+            }
+
+            if (m_window.isKeyDown(Key::S)) {
+                forwardInput -= 1.0F;
+            }
+
+            if (m_window.isKeyDown(Key::D)) {
+                rightInput += 1.0F;
+            }
+
+            if (m_window.isKeyDown(Key::A)) {
+                rightInput -= 1.0F;
+            }
+
+            player.move(
+                forwardInput,
+                rightInput,
+                camera.yaw(),
+                kPlayerSpeed
+            );
+
+            /*
+             * Jump press-edge detection.
+             */
             const bool jumpKeyDown =
                     m_window.isKeyDown(Key::Space);
 
@@ -444,34 +343,26 @@ namespace bedrocked {
             previousJumpKeyDown = jumpKeyDown;
 
             if (jumpKeyPressed) {
-                constexpr float jumpVelocity = 8.0F;
-                player.jump(jumpVelocity);
+                player.jump(kJumpVelocity);
             }
 
-            /*
-             * Gravity and vertical ground collision.
-             */
             player.update(deltaTimeSeconds, world);
 
-            /*
-             * Attach the camera to the player’s eye position.
-             */
             const Vector3 &playerPosition =
                     player.position();
 
+            camera.setPosition(playerPosition.x, playerPosition.y + kPlayerEyeHeight, playerPosition.z);
+
+            /*
+             * Block targeting.
+             */
             const Vector3 rayOrigin{
                 .x = playerPosition.x,
                 .y = playerPosition.y + kPlayerEyeHeight,
                 .z = playerPosition.z
             };
 
-            constexpr float interactionReach = 5.0F;
-
-            const auto raycastHit = raycastBlocks(
-                world, rayOrigin,
-                camera.forwardDirection(),
-                interactionReach
-            );
+            const auto raycastHit = raycastBlocks(world, rayOrigin, camera.forwardDirection(), kInteractionReach);
 
             if (raycastHit.has_value()) {
                 const BlockPosition &targetedBlock =
@@ -495,7 +386,11 @@ namespace bedrocked {
                 previousTarget.reset();
             }
 
-            if (leftMousePressed && raycastHit.has_value()) {
+            /*
+             * Destroy targeted block.
+             */
+            if (leftMousePressed &&
+                raycastHit.has_value()) {
                 const BlockPosition destroyedBlock =
                         raycastHit->block;
 
@@ -506,9 +401,12 @@ namespace bedrocked {
                     BlockType::Air
                 );
 
-                rebuildAroundBlock(destroyedBlock);
+                chunkRenderer.rebuildAroundBlock(chunkManager, destroyedBlock);
             }
 
+            /*
+             * Place a block in the adjacent empty cell.
+             */
             if (rightMousePressed && raycastHit.has_value()) {
                 const BlockPosition placementPosition =
                         raycastHit->adjacentBlock;
@@ -529,16 +427,13 @@ namespace bedrocked {
                         hotbar.selectedBlock()
                     );
 
-                    rebuildAroundBlock(placementPosition);
+                    chunkRenderer.rebuildAroundBlock(chunkManager, placementPosition);
                 }
             }
 
-            camera.setPosition(
-                playerPosition.x,
-                playerPosition.y + kPlayerEyeHeight,
-                playerPosition.z
-            );
-
+            /*
+             * Do not begin an ImGui frame if rendering will be skipped.
+             */
             const FrameBufferSize framebufferSize =
                     m_window.framebufferSize();
 
@@ -548,9 +443,7 @@ namespace bedrocked {
             }
 
             imguiLayer.beginFrame();
-
-            m_renderer.setViewPort(framebufferSize.width,
-                                   framebufferSize.height);
+            m_renderer.setViewPort(framebufferSize.width, framebufferSize.height);
 
             const float aspectRatio =
                     static_cast<float>(framebufferSize.width) / static_cast<float>(framebufferSize.height);
@@ -560,26 +453,24 @@ namespace bedrocked {
             const Matrix4 view = camera.viewMatrix();
 
             /*
-             * Render the world.
+             * Render the voxel world.
              */
             m_renderer.clear();
 
             glActiveTexture(GL_TEXTURE0);
             blockTexture.bind();
 
-            shader.use();
-            shader.setMat4("projection", projection.data());
-            shader.setMat4("view", view.data());
+            worldShader.use();
 
-            for (const RenderChunk &renderChunk: renderChunks) {
-                if (renderChunk.mesh == nullptr) {
-                    continue;
-                }
-                shader.setMat4("model", renderChunk.model.data());
+            worldShader.setMat4("projection", projection.data());
 
-                m_renderer.draw(*renderChunk.mesh);
-            }
+            worldShader.setMat4("view", view.data());
 
+            chunkRenderer.draw(m_renderer, worldShader);
+
+            /*
+             * Render the targeted-block outline.
+             */
             if (raycastHit.has_value()) {
                 const BlockPosition &target =
                         raycastHit->block;
@@ -609,6 +500,9 @@ namespace bedrocked {
                 m_renderer.drawLines(selectionOutline);
             }
 
+            /*
+             * Render UI after the 3D scene.
+             */
             hotbarUI.draw(hotbar);
             imguiLayer.endFrame();
 
@@ -618,9 +512,11 @@ namespace bedrocked {
              * Performance statistics.
              */
             statisticsElapsedTime += deltaTime;
+
             ++loopCount;
 
-            if (statisticsElapsedTime >= kStatisticsInterval) {
+            if (statisticsElapsedTime >=
+                kStatisticsInterval) {
                 const double loopsPerSecond =
                         static_cast<double>(loopCount) /
                         statisticsElapsedTime;
