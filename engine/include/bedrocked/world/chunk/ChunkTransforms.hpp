@@ -16,4 +16,4 @@ namespace bedrocked {
             static_cast<float>(Chunk::Depth)
         );
     }
-}// namespace bedrocked
+} // namespace bedrocked

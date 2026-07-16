@@ -14,4 +14,4 @@ namespace bedrocked {
 
         std::uint32_t m_seed;
     };
-}// namespace bedrocked
+} // namespace bedrocked

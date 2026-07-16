@@ -3,74 +3,74 @@
 #include <cmath>
 
 namespace {
-    [[nodiscard]] constexpr float fade(float value) noexcept {
-        return value * value * value * (value * (value * 6.0F - 15.0F) + 10.0F);
-    }
+        [[nodiscard]] constexpr float fade(float value) noexcept {
+                return value * value * value * (value * (value * 6.0F - 15.0F) + 10.0F);
+        }
 
-    [[nodiscard]] constexpr float lerp(float start, float end, float amount) noexcept {
-        return start + (end - start) * amount;
-    }
+        [[nodiscard]] constexpr float lerp(float start, float end, float amount) noexcept {
+                return start + (end - start) * amount;
+        }
 } // anonymous helper
 
 namespace bedrocked {
-    ValueNoise::ValueNoise(std::uint32_t seed) noexcept
-        : m_seed(seed) {
-    }
+        ValueNoise::ValueNoise(std::uint32_t seed) noexcept
+                : m_seed(seed) {
+        }
 
-    float ValueNoise::valueAt(int x, int z) const noexcept {
-        std::uint32_t hash = m_seed;
+        float ValueNoise::valueAt(int x, int z) const noexcept {
+                std::uint32_t hash = m_seed;
 
-        hash ^= static_cast<std::uint32_t>(x) * 0x27D4EB2DU;
-        hash ^= static_cast<std::uint32_t>(x) * 0x165667B1U;
+                hash ^= static_cast<std::uint32_t>(x) * 0x27D4EB2DU;
+                hash ^= static_cast<std::uint32_t>(x) * 0x165667B1U;
 
-        hash ^= hash >> 15U;
-        hash *= 0x85EBCA6BU;
-        hash ^= hash >> 13U;
-        hash *= 0xC2B2AE35U;
-        hash ^= hash >> 16U;
+                hash ^= hash >> 15U;
+                hash *= 0x85EBCA6BU;
+                hash ^= hash >> 13U;
+                hash *= 0xC2B2AE35U;
+                hash ^= hash >> 16U;
 
-        constexpr float maximum24BitValue =
-                static_cast<float>(0x00FFFFFFU);
+                constexpr float maximum24BitValue =
+                                static_cast<float>(0x00FFFFFFU);
 
-        return static_cast<float>(hash >> 8U) / maximum24BitValue;
-    }
+                return static_cast<float>(hash >> 8U) / maximum24BitValue;
+        }
 
-    float ValueNoise::sample(float x, float z) const noexcept {
-        const int minimumX =
-                static_cast<int>(std::floor(x));
+        float ValueNoise::sample(float x, float z) const noexcept {
+                const int minimumX =
+                                static_cast<int>(std::floor(x));
 
-        const int minimumZ =
-                static_cast<int>(std::floor(z));
+                const int minimumZ =
+                                static_cast<int>(std::floor(z));
 
-        const int maximumX = minimumX + 1;
-        const int maximumZ = minimumZ + 1;
+                const int maximumX = minimumX + 1;
+                const int maximumZ = minimumZ + 1;
 
-        const float localX =
-                x - static_cast<float>(minimumX);
-        const float localZ =
-                z - static_cast<float>(minimumZ);
+                const float localX =
+                                x - static_cast<float>(minimumX);
+                const float localZ =
+                                z - static_cast<float>(minimumZ);
 
-        const float smoothX = fade(localX);
-        const float smoothZ = fade(localZ);
+                const float smoothX = fade(localX);
+                const float smoothZ = fade(localZ);
 
-        const float bottomLeft =
-                valueAt(minimumX, minimumZ);
+                const float bottomLeft =
+                                valueAt(minimumX, minimumZ);
 
-        const float bottomRight =
-                valueAt(maximumX, maximumZ);
+                const float bottomRight =
+                                valueAt(maximumX, maximumZ);
 
-        const float topLeft =
-                valueAt(minimumX, maximumZ);
+                const float topLeft =
+                                valueAt(minimumX, maximumZ);
 
-        const float topRight =
-                valueAt(maximumX, maximumZ);
+                const float topRight =
+                                valueAt(maximumX, maximumZ);
 
-        const float bottom =
-                lerp(bottomLeft, bottomRight, smoothX);
+                const float bottom =
+                                lerp(bottomLeft, bottomRight, smoothX);
 
-        const float top =
-                lerp(topLeft, topRight, smoothX);
+                const float top =
+                                lerp(topLeft, topRight, smoothX);
 
-        return lerp(bottom, top, smoothZ);
-    }
+                return lerp(bottom, top, smoothZ);
+        }
 } // namespace bedrocked

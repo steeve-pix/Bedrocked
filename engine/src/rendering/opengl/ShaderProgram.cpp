@@ -24,7 +24,7 @@ namespace {
         }
 
         int logLength{};
-        glGetShaderiv(shader,GL_INFO_LOG_LENGTH, &logLength);
+        glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &logLength);
 
         std::string errorLog(
             static_cast<std::size_t>(logLength),
@@ -67,7 +67,7 @@ namespace bedrocked {
         glLinkProgram(m_id);
 
         int linkingSucceed{};
-        glGetProgramiv(m_id,GL_LINK_STATUS, &linkingSucceed);
+        glGetProgramiv(m_id, GL_LINK_STATUS, &linkingSucceed);
 
         if (linkingSucceed == GL_TRUE) {
             glDeleteShader(vertexShader);
@@ -76,7 +76,7 @@ namespace bedrocked {
         }
 
         int logLength{};
-        glGetProgramiv(m_id,GL_INFO_LOG_LENGTH, &logLength);
+        glGetProgramiv(m_id, GL_INFO_LOG_LENGTH, &logLength);
 
         std::string errorLog(
             static_cast<std::size_t>(logLength),
@@ -123,7 +123,7 @@ namespace bedrocked {
 
         const int location = glGetUniformLocation(m_id, uniformName.c_str());
 
-        glUniformMatrix4fv(location, 1,GL_FALSE, values);
+        glUniformMatrix4fv(location, 1, GL_FALSE, values);
     }
 
     void ShaderProgram::setInt(std::string_view name, int value) const {

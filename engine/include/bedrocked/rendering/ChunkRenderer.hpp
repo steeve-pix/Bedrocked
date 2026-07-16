@@ -9,26 +9,25 @@
 #include <vector>
 
 namespace bedrocked {
-
     class ChunkManager;
     class Renderer;
     class ShaderProgram;
 
     class ChunkRenderer final {
     public:
-        void build(ChunkManager& chunkManager);
+        void build(ChunkManager &chunkManager);
 
         void rebuildChunk(
-            ChunkManager& chunkManager,
+            ChunkManager &chunkManager,
             ChunkPosition position);
 
         void rebuildAroundBlock(
-            ChunkManager& chunkManager,
+            ChunkManager &chunkManager,
             BlockPosition block);
 
         void draw(
-            Renderer& renderer,
-            ShaderProgram& shader) const;
+            Renderer &renderer,
+            ShaderProgram &shader) const;
 
     private:
         struct RenderChunk {
@@ -37,10 +36,9 @@ namespace bedrocked {
             std::unique_ptr<Mesh> mesh;
         };
 
-        [[nodiscard]] RenderChunk* find(
+        [[nodiscard]] RenderChunk *find(
             ChunkPosition position) noexcept;
 
         std::vector<RenderChunk> m_chunks;
     };
-
 } // namespace bedrocked

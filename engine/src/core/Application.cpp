@@ -29,6 +29,8 @@
 
 #include <glad/glad.h>
 
+#include "bedrocked/gameplay/BlockInteractor.hpp"
+
 namespace bedrocked {
     namespace {
         constexpr float kPi = 3.14159265358979323846F;
@@ -219,7 +221,10 @@ namespace bedrocked {
         worldShader.use();
         worldShader.setInt("blockTexture", 0);
 
-        std::optional<BlockPosition> previousTarget;
+
+        BlockInteractor blockInteractor{
+            kInteractionReach
+        };
 
         bool previousLeftMouseDown{};
         bool previousRightMouseDown{};
@@ -229,17 +234,13 @@ namespace bedrocked {
         int loopCount{};
 
         while (!m_window.shouldClose()) {
-            const double deltaTime =
-                    m_timer.tick();
+            const double deltaTime = m_timer.tick();
 
             const float deltaTimeSeconds =
                     static_cast<float>(deltaTime);
 
             m_window.pollEvents();
 
-            /*
-             * Mouse-button edge detection.
-             */
             const bool leftMouseDown =
                     m_window.isMouseButtonDown(MouseButton::Left);
 
@@ -257,7 +258,7 @@ namespace bedrocked {
             previousRightMouseDown = rightMouseDown;
 
             /*
-             * Camera orientation.
+             * Camera orientation
              */
             const CursorPosition currentCursor =
                     m_window.cursorPosition();
@@ -271,8 +272,11 @@ namespace bedrocked {
             previousCursor = currentCursor;
 
             camera.rotate(
-                -static_cast<float>(mouseDeltaX) * kMouseSensitivity,
-                static_cast<float>(mouseDeltaY) * kMouseSensitivity
+                -static_cast<float>(mouseDeltaX) *
+                kMouseSensitivity,
+
+                static_cast<float>(mouseDeltaY) *
+                kMouseSensitivity
             );
 
             if (m_window.isKeyDown(Key::Escape)) {
@@ -280,7 +284,7 @@ namespace bedrocked {
             }
 
             /*
-             * Hotbar selection.
+             * Hotbar selection
              */
             if (m_window.isKeyDown(Key::Digit1)) {
                 hotbar.select(0);
@@ -303,7 +307,7 @@ namespace bedrocked {
             }
 
             /*
-             * Player movement input.
+             * Player movement
              */
             float forwardInput{};
             float rightInput{};
@@ -332,7 +336,7 @@ namespace bedrocked {
             );
 
             /*
-             * Jump press-edge detection.
+             * Jump press detection
              */
             const bool jumpKeyDown =
                     m_window.isKeyDown(Key::Space);
@@ -346,15 +350,25 @@ namespace bedrocked {
                 player.jump(kJumpVelocity);
             }
 
-            player.update(deltaTimeSeconds, world);
+            player.update(
+                deltaTimeSeconds,
+                world
+            );
 
+            /*
+             * Camera follows the player
+             */
             const Vector3 &playerPosition =
                     player.position();
 
-            camera.setPosition(playerPosition.x, playerPosition.y + kPlayerEyeHeight, playerPosition.z);
+            camera.setPosition(
+                playerPosition.x,
+                playerPosition.y + kPlayerEyeHeight,
+                playerPosition.z
+            );
 
             /*
-             * Block targeting.
+             * Block targeting
              */
             const Vector3 rayOrigin{
                 .x = playerPosition.x,
@@ -362,77 +376,31 @@ namespace bedrocked {
                 .z = playerPosition.z
             };
 
-            const auto raycastHit = raycastBlocks(world, rayOrigin, camera.forwardDirection(), kInteractionReach);
+            blockInteractor.updateTarget(world, rayOrigin, camera.forwardDirection());
 
-            if (raycastHit.has_value()) {
-                const BlockPosition &targetedBlock =
-                        raycastHit->block;
-
-                if (!previousTarget.has_value() ||
-                    previousTarget.value() != targetedBlock) {
-                    std::cout
-                            << "Targeted block: "
-                            << targetedBlock.x << ", "
-                            << targetedBlock.y << ", "
-                            << targetedBlock.z
-                            << " | distance: "
-                            << raycastHit->distance
-                            << '\n';
-
-                    previousTarget = targetedBlock;
-                }
-            } else if (previousTarget.has_value()) {
-                std::cout << "No block targeted\n";
-                previousTarget.reset();
-            }
-
-            /*
-             * Destroy targeted block.
-             */
-            if (leftMousePressed &&
-                raycastHit.has_value()) {
-                const BlockPosition destroyedBlock =
-                        raycastHit->block;
-
-                world.setBlockAtWorld(
-                    destroyedBlock.x,
-                    destroyedBlock.y,
-                    destroyedBlock.z,
-                    BlockType::Air
+            if (leftMousePressed) {
+                blockInteractor.destroyTargetedBlock(
+                    world,
+                    chunkManager,
+                    chunkRenderer
                 );
-
-                chunkRenderer.rebuildAroundBlock(chunkManager, destroyedBlock);
             }
 
-            /*
-             * Place a block in the adjacent empty cell.
-             */
-            if (rightMousePressed && raycastHit.has_value()) {
-                const BlockPosition placementPosition =
-                        raycastHit->adjacentBlock;
-
-                const BlockType existingBlock =
-                        world.blockAtWorld(
-                            placementPosition.x,
-                            placementPosition.y,
-                            placementPosition.z
-                        );
-
-                if (existingBlock == BlockType::Air &&
-                    !player.intersectsBlock(placementPosition)) {
-                    world.setBlockAtWorld(
-                        placementPosition.x,
-                        placementPosition.y,
-                        placementPosition.z,
-                        hotbar.selectedBlock()
-                    );
-
-                    chunkRenderer.rebuildAroundBlock(chunkManager, placementPosition);
-                }
+            if (rightMousePressed) {
+                blockInteractor.placeBlock(
+                    world,
+                    chunkManager,
+                    chunkRenderer,
+                    player,
+                    hotbar.selectedBlock()
+                );
             }
 
+            const std::optional<BlockPosition> &targetedBlock =
+                    blockInteractor.targetedBlock();
+
             /*
-             * Do not begin an ImGui frame if rendering will be skipped.
+             * Framebuffer and projection
              */
             const FrameBufferSize framebufferSize =
                     m_window.framebufferSize();
@@ -443,17 +411,29 @@ namespace bedrocked {
             }
 
             imguiLayer.beginFrame();
-            m_renderer.setViewPort(framebufferSize.width, framebufferSize.height);
+
+            m_renderer.setViewPort(
+                framebufferSize.width,
+                framebufferSize.height
+            );
 
             const float aspectRatio =
-                    static_cast<float>(framebufferSize.width) / static_cast<float>(framebufferSize.height);
+                    static_cast<float>(framebufferSize.width) /
+                    static_cast<float>(framebufferSize.height);
 
-            const Matrix4 projection = Matrix4::perspective(kFieldOfView, aspectRatio, kNearClipPlane, kFarClipPlane);
+            const Matrix4 projection =
+                    Matrix4::perspective(
+                        kFieldOfView,
+                        aspectRatio,
+                        kNearClipPlane,
+                        kFarClipPlane
+                    );
 
-            const Matrix4 view = camera.viewMatrix();
+            const Matrix4 view =
+                    camera.viewMatrix();
 
             /*
-             * Render the voxel world.
+             * Render voxel world
              */
             m_renderer.clear();
 
@@ -462,18 +442,27 @@ namespace bedrocked {
 
             worldShader.use();
 
-            worldShader.setMat4("projection", projection.data());
+            worldShader.setMat4(
+                "projection",
+                projection.data()
+            );
 
-            worldShader.setMat4("view", view.data());
+            worldShader.setMat4(
+                "view",
+                view.data()
+            );
 
-            chunkRenderer.draw(m_renderer, worldShader);
+            chunkRenderer.draw(
+                m_renderer,
+                worldShader
+            );
 
             /*
-             * Render the targeted-block outline.
+             * Render targeted-block outline
              */
-            if (raycastHit.has_value()) {
+            if (targetedBlock.has_value()) {
                 const BlockPosition &target =
-                        raycastHit->block;
+                        targetedBlock.value();
 
                 constexpr float outlineScale = 1.002F;
 
@@ -491,17 +480,28 @@ namespace bedrocked {
 
                 outlineShader.use();
 
-                outlineShader.setMat4("projection", projection.data());
+                outlineShader.setMat4(
+                    "projection",
+                    projection.data()
+                );
 
-                outlineShader.setMat4("view", view.data());
+                outlineShader.setMat4(
+                    "view",
+                    view.data()
+                );
 
-                outlineShader.setMat4("model", outlineModel.data());
+                outlineShader.setMat4(
+                    "model",
+                    outlineModel.data()
+                );
 
-                m_renderer.drawLines(selectionOutline);
+                m_renderer.drawLines(
+                    selectionOutline
+                );
             }
 
             /*
-             * Render UI after the 3D scene.
+             * Render UI
              */
             hotbarUI.draw(hotbar);
             imguiLayer.endFrame();
@@ -509,10 +509,9 @@ namespace bedrocked {
             m_window.swapBuffers();
 
             /*
-             * Performance statistics.
+             * Performance statistics
              */
             statisticsElapsedTime += deltaTime;
-
             ++loopCount;
 
             if (statisticsElapsedTime >=
@@ -525,6 +524,7 @@ namespace bedrocked {
                         statisticsElapsedTime /
                         static_cast<double>(loopCount) *
                         1'000.0;
+
                 std::cout
                         << "Loop rate: "
                         << loopsPerSecond
