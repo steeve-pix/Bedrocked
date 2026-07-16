@@ -27,6 +27,7 @@ add_library(bedrocked_engine STATIC
         src/world/generation/ValueNoise3D.cpp
         src/gameplay/Player.cpp
         src/world/block/BlockRaycast.cpp
+        src/ui/ImGuiLayer.cpp
 )
 
 #
@@ -48,4 +49,5 @@ target_link_libraries(bedrocked_engine
         glad
         OpenGL::GL
         stb
+        imgui
 )

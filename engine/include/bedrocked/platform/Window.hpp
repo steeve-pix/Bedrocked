@@ -51,6 +51,8 @@ namespace bedrocked {
 
         [[nodiscard]] bool isMouseButtonDown(MouseButton button) const noexcept;
 
+        [[nodiscard]] GLFWwindow *nativeHandle() const noexcept;
+
     private:
         GLFWwindow *m_handle{nullptr};
     };

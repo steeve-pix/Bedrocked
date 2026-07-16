@@ -126,4 +126,8 @@ namespace bedrocked {
     bool Window::isMouseButtonDown(MouseButton button) const noexcept {
         return glfwGetMouseButton(m_handle, toGlfwMouseButton(button)) == GLFW_PRESS;
     }
+
+    GLFWwindow *Window::nativeHandle() const noexcept {
+        return m_handle;
+    }
 } // namespace bedrocked
