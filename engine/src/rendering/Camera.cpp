@@ -50,6 +50,10 @@ namespace bedrocked {
         return m_yaw;
     }
 
+    float Camera::pitch() const noexcept {
+        return m_pitch;
+    }
+
     Vector3 Camera::forwardDirection() const noexcept {
         const float horizontalLength =
                 std::cos(m_pitch);

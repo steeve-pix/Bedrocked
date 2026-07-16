@@ -19,6 +19,8 @@ namespace bedrocked {
 
         [[nodiscard]] float yaw() const noexcept;
 
+        [[nodiscard]] float pitch() const noexcept;
+
         [[nodiscard]] Vector3 forwardDirection() const noexcept;
 
     private:
